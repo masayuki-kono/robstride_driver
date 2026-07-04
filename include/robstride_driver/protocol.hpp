@@ -26,9 +26,9 @@ namespace robstride {
 /// A raw CAN 2.0B data frame. `id` holds the 29-bit extended identifier
 /// without any transport-specific flag bits (e.g. Linux CAN_EFF_FLAG).
 struct CanFrame {
-  std::uint32_t id = 0;
-  std::array<std::uint8_t, 8> data{};
-  std::uint8_t dlc = 8;
+  std::uint32_t id = 0;               ///< 29-bit extended identifier
+  std::array<std::uint8_t, 8> data{}; ///< data field (valid bytes: dlc)
+  std::uint8_t dlc = 8;               ///< data length code (0-8)
 };
 
 /// Communication types (bit28-24 of the 29-bit identifier).
@@ -40,23 +40,23 @@ enum class CommType : std::uint8_t {
   kStop = 0x04,
   kSetMechanicalZero = 0x06,
   kSetCanId = 0x07,
-  kReadParam = 0x11,  // 17: single parameter read
-  kWriteParam = 0x12, // 18: single parameter write (volatile)
-  kFaultFeedback = 0x15,
-  kSaveData = 0x16,
-  kSetBaudRate = 0x17,
-  kActiveReport = 0x18,
-  kSetProtocol = 0x19,
+  kReadParam = 0x11,     // 17: single parameter read
+  kWriteParam = 0x12,    // 18: single parameter write (volatile)
+  kFaultFeedback = 0x15, // 21: spontaneous fault/warning report
+  kSaveData = 0x16,      // 22: persist parameters to flash
+  kSetBaudRate = 0x17,   // 23: change CAN bit rate (effective on repower)
+  kActiveReport = 0x18,  // 24: periodic active reporting control
+  kSetProtocol = 0x19,   // 25: switch private / CANopen / MIT protocol
 };
 
 /// run_mode (parameter 0x7005) values.
 enum class RunMode : std::uint8_t {
   kOperationControl = 0, ///< MIT-style motion control (communication type 1)
   kPositionPp = 1,       ///< profile position
-  kVelocity = 2,
-  kCurrent = 3,
-  kSetZero = 4,
-  kPositionCsp = 5, ///< cyclic synchronous position
+  kVelocity = 2,         ///< velocity control (target: spd_ref 0x700A)
+  kCurrent = 3,          ///< Iq current control (target: iq_ref 0x7006)
+  kSetZero = 4,          ///< zero-calibration mode
+  kPositionCsp = 5,      ///< cyclic synchronous position
 };
 
 /// Writable / readable parameter indices (communication types 17/18).
@@ -108,10 +108,10 @@ struct FaultStatus {
 
 /// Decoded motor feedback (communication type 2).
 struct Feedback {
-  std::uint8_t motor_id = 0;
-  std::uint8_t host_id = 0;
-  MotorMode mode = MotorMode::kReset;
-  FaultStatus fault{};
+  std::uint8_t motor_id = 0;          ///< motor that sent the feedback
+  std::uint8_t host_id = 0;           ///< destination host id
+  MotorMode mode = MotorMode::kReset; ///< reset / calibration / run
+  FaultStatus fault{};                ///< fault bits (bit21-16 of the id)
   double position = 0.0;    ///< [rad]
   double velocity = 0.0;    ///< [rad/s]
   double torque = 0.0;      ///< [Nm]
@@ -120,8 +120,8 @@ struct Feedback {
 
 /// Decoded parameter-read response (communication type 17).
 struct ParamResponse {
-  std::uint8_t motor_id = 0;
-  std::uint16_t index = 0;
+  std::uint8_t motor_id = 0;          ///< motor that sent the response
+  std::uint16_t index = 0;            ///< parameter index (0x7000 family)
   std::array<std::uint8_t, 4> data{}; ///< little-endian value bytes
 
   float AsFloat() const;

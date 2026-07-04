@@ -28,6 +28,8 @@ std::vector<std::uint8_t> EncodeFrame(const CanFrame& frame);
 /// replies) are skipped.
 class FrameParser {
  public:
+  /// Appends raw bytes received from the serial port to the internal
+  /// buffer.
   void Push(const std::uint8_t* data, std::size_t size);
 
   /// Extracts the next complete frame from the internal buffer, or
@@ -35,6 +37,8 @@ class FrameParser {
   std::optional<CanFrame> Poll();
 
  private:
+  /// Unconsumed raw bytes; Poll() removes parsed frames and skipped
+  /// garbage from the front.
   std::vector<std::uint8_t> buffer_;
 };
 
@@ -62,8 +66,11 @@ class AtSerialCanInterface : public CanInterface {
   std::optional<CanFrame> Receive(std::chrono::milliseconds timeout) override;
 
  private:
+  /// File descriptor of the opened serial device (-1 when closed).
   int fd_ = -1;
+  /// Serial device path (e.g. "/dev/ttyUSB0"), kept for error messages.
   std::string device_;
+  /// Reassembles AT frames from the raw byte stream across Receive calls.
   at_serial::FrameParser parser_;
 };
 

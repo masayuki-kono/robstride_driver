@@ -34,8 +34,11 @@ class TimeoutError : public std::runtime_error {
 class RobstrideMotor {
  public:
   struct Config {
-    std::uint8_t motor_id = 0x7F;  ///< factory default id
+    /// CAN id of the target motor (0x7F is the factory default).
+    std::uint8_t motor_id = 0x7F;
+    /// CAN id representing this host in command frames.
     std::uint8_t host_id = 0xFD;
+    /// Motor model; selects the fixed-point scaling ranges.
     ActuatorType actuator_type = ActuatorType::kRs02;
     /// Max time to wait for a response frame per command.
     std::chrono::milliseconds response_timeout{100};
@@ -100,7 +103,10 @@ class RobstrideMotor {
     return last_feedback_;
   }
 
+  /// CAN id of the controlled motor.
   std::uint8_t motor_id() const { return config_.motor_id; }
+
+  /// Fixed-point scaling ranges of the configured actuator model.
   const ActuatorLimits& limits() const { return limits_; }
 
  private:
@@ -112,9 +118,14 @@ class RobstrideMotor {
   /// Sends `frame` and waits for the feedback response, returning it.
   Feedback TransceiveFeedback(const CanFrame& frame);
 
+  /// Transport shared with other motors on the same bus.
   std::shared_ptr<CanInterface> can_;
+  /// Motor id, host id, model and timeout settings (fixed at construction).
   Config config_;
+  /// Fixed-point scaling ranges for config_.actuator_type.
   ActuatorLimits limits_;
+  /// Most recent feedback frame seen from this motor (nullopt until the
+  /// first response arrives).
   std::optional<Feedback> last_feedback_;
 };
 

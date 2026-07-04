@@ -63,8 +63,13 @@ class PositionUnwrapper {
   }
 
  private:
+  /// Total width of the wrapped encoding range (max - min) [rad].
   double span_;
+  /// Accumulated correction added to raw samples; grows/shrinks by
+  /// `span_` each time the raw position wraps around [rad].
   double offset_ = 0.0;
+  /// Raw (wrapped) position of the previous Update call; nullopt until
+  /// the first sample arrives [rad].
   std::optional<double> last_wrapped_;
 };
 

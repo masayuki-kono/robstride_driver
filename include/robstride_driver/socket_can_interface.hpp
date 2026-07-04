@@ -34,7 +34,9 @@ class SocketCanInterface : public CanInterface {
   std::optional<CanFrame> Receive(std::chrono::milliseconds timeout) override;
 
  private:
+  /// Raw CAN socket file descriptor (-1 when closed).
   int socket_fd_ = -1;
+  /// CAN network interface name (e.g. "can0"), kept for error messages.
   std::string interface_name_;
 };
 
