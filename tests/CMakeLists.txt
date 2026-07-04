@@ -2,6 +2,7 @@ find_package(GTest REQUIRED)
 
 add_executable(robstride_driver_tests
   test_at_serial_framing.cpp
+  test_position_unwrapper.cpp
   test_protocol.cpp
   test_robstride_motor.cpp
 )

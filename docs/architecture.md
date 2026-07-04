@@ -34,6 +34,11 @@ flowchart TD
 - `AtSerialCanInterface` targets the official RobStride USB-CAN module (CH340 serial bridge at 921600 baud). Frames are wrapped in the module's AT framing — `"AT"` + big-endian `((id << 3) | 0x4)` + DLC + data + `"\r\n"` — by the pure codec in `at_serial::EncodeFrame` / `at_serial::FrameParser`, which is unit-tested against the worked example in the RS02 User Manual. The parser is length-based (DLC), so payload bytes equal to the tail sequence do not break framing, and it resynchronizes on corrupted input.
 - Tests substitute a scripted mock; other transports (e.g. a remote CAN bridge) can be added without touching motor logic.
 
+### `PositionUnwrapper` — continuous position helper
+
+- The position in feedback frames is encoded in a fixed wrapped range (±4π for the RS02), so continuous rotation jumps from one end of the range to the other.
+- `PositionUnwrapper` (header-only) accumulates these wraps into a continuous position. Wrap detection assumes the true motion between two samples is less than half the range — for the RS02 (8π range, 44 rad/s max) any sampling period up to ~280 ms is safe.
+
 ### `RobstrideMotor` — high-level API
 
 - One instance per motor (`motor_id`, `host_id`, `ActuatorType`, response timeout).

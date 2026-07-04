@@ -8,6 +8,7 @@
 #include "robstride_driver/actuator_types.hpp"
 #include "robstride_driver/at_serial_can_interface.hpp"
 #include "robstride_driver/can_interface.hpp"
+#include "robstride_driver/position_unwrapper.hpp"
 #include "robstride_driver/protocol.hpp"
 #include "robstride_driver/robstride_motor.hpp"
 #include "robstride_driver/socket_can_interface.hpp"

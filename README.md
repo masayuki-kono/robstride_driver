@@ -10,6 +10,7 @@ A ROS-independent C++ driver library for [RobStride](https://www.robstride.com/)
   - The official RobStride USB-CAN module (CH340 serial bridge, AT framing, 921600 baud)
 - Implements the RobStride private CAN protocol (29-bit extended frames, 1 Mbps)
 - High-level motor API: enable/disable, velocity mode, CSP position mode, operation (MIT) control, feedback parsing, parameter read/write, mechanical zero
+- `PositionUnwrapper` helper that converts the wrapped feedback position (±4π on RS02) into a continuous position
 - Transport abstraction (`CanInterface`) so the protocol and motor logic are unit-testable without hardware
 - Validated against the **RobStride RS02**; range tables for RS00–RS06 are included
 
