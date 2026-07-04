@@ -16,6 +16,8 @@ A ROS-independent C++ driver library for [RobStride](https://www.robstride.com/)
 
 ## Tracking performance (RS02, real hardware)
 
+Measured on an unloaded, as-delivered RS02 (see [docs/test_results.md](docs/test_results.md) for preconditions and how to reproduce with [examples/tracking_capture.cpp](examples/tracking_capture.cpp)).
+
 Velocity mode — the actual velocity follows step commands (0 → +2 → +4 → −2 → 0 rad/s) with a steady-state mean error below 0.3 %:
 
 ![Velocity mode tracking](docs/images/velocity_tracking.png)
