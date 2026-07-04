@@ -6,6 +6,7 @@
 #pragma once
 
 #include "robstride_driver/actuator_types.hpp"
+#include "robstride_driver/at_serial_can_interface.hpp"
 #include "robstride_driver/can_interface.hpp"
 #include "robstride_driver/protocol.hpp"
 #include "robstride_driver/robstride_motor.hpp"

@@ -1,11 +1,13 @@
 # robstride_driver
 
-A ROS-independent C++ driver library for [RobStride](https://www.robstride.com/) quasi-direct-drive motors over Linux SocketCAN.
+A ROS-independent C++ driver library for [RobStride](https://www.robstride.com/) quasi-direct-drive motors over Linux SocketCAN or the official RobStride USB-CAN module.
 
 ## Features
 
 - Pure C++20 / CMake library — no ROS or other framework dependencies
-- Talks directly to Linux SocketCAN (`PF_CAN` / `SOCK_RAW`), works with any SocketCAN-compatible USB-CAN adapter
+- Two transports:
+  - Linux SocketCAN (`PF_CAN` / `SOCK_RAW`), works with any SocketCAN-compatible USB-CAN adapter
+  - The official RobStride USB-CAN module (CH340 serial bridge, AT framing, 921600 baud)
 - Implements the RobStride private CAN protocol (29-bit extended frames, 1 Mbps)
 - High-level motor API: enable/disable, velocity mode, CSP position mode, operation (MIT) control, feedback parsing, parameter read/write, mechanical zero
 - Transport abstraction (`CanInterface`) so the protocol and motor logic are unit-testable without hardware
@@ -38,10 +40,14 @@ sudo cmake --install build      # optional
 
 ### Bring up the CAN interface
 
+For a SocketCAN adapter:
+
 ```bash
 sudo ip link set can0 type can bitrate 1000000
 sudo ip link set can0 up
 ```
+
+For the RobStride USB-CAN module, no interface setup is needed — it appears as a serial device (e.g. `/dev/ttyUSB0`); make sure your user can access it (`dialout` group).
 
 See [docs/setup.md](docs/setup.md) for persistent configuration and a virtual-CAN smoke test.
 
@@ -53,6 +59,8 @@ See [docs/setup.md](docs/setup.md) for persistent configuration and a virtual-CA
 int main() {
   auto can = std::make_shared<robstride::SocketCanInterface>("can0");
   can->SetMotorIdFilter(0x01);
+  // ... or, with the RobStride USB-CAN module:
+  // auto can = std::make_shared<robstride::AtSerialCanInterface>("/dev/ttyUSB0");
 
   robstride::RobstrideMotor::Config config;
   config.motor_id = 0x01;
@@ -74,7 +82,8 @@ int main() {
 A complete velocity-control CLI is provided in [examples/velocity_control.cpp](examples/velocity_control.cpp):
 
 ```bash
-./build/examples/velocity_control can0 1 2.0 3.0   # motor id 1, 2 rad/s, 3 s
+./build/examples/velocity_control can0 1 2.0 3.0          # SocketCAN
+./build/examples/velocity_control /dev/ttyUSB0 1 2.0 3.0  # RobStride USB-CAN module
 ```
 
 ### Using from CMake

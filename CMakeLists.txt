@@ -9,6 +9,7 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 add_library(${PROJECT_NAME}
+  src/at_serial_can_interface.cpp
   src/protocol.cpp
   src/robstride_motor.cpp
   src/socket_can_interface.cpp

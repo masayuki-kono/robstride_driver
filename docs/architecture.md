@@ -8,8 +8,10 @@ flowchart TD
     motor --> proto[protocol encode and decode]
     motor --> canif[CanInterface abstract]
     canif --> sock[SocketCanInterface]
+    canif --> serial[AtSerialCanInterface]
     canif --> mock[MockCanInterface tests]
     sock --> bus[("Linux SocketCAN / CAN bus")]
+    serial --> module[("RobStride USB-CAN module (serial)")]
 ```
 
 ## Layers
@@ -28,7 +30,8 @@ flowchart TD
 ### `CanInterface` — transport abstraction
 
 - Two operations: `Send(frame)` and `Receive(timeout)`.
-- `SocketCanInterface` is the production implementation (raw SocketCAN socket, extended frames only, optional kernel-side filter on the source motor id).
+- `SocketCanInterface` targets SocketCAN adapters (raw SocketCAN socket, extended frames only, optional kernel-side filter on the source motor id).
+- `AtSerialCanInterface` targets the official RobStride USB-CAN module (CH340 serial bridge at 921600 baud). Frames are wrapped in the module's AT framing — `"AT"` + big-endian `((id << 3) | 0x4)` + DLC + data + `"\r\n"` — by the pure codec in `at_serial::EncodeFrame` / `at_serial::FrameParser`, which is unit-tested against the worked example in the RS02 User Manual. The parser is length-based (DLC), so payload bytes equal to the tail sequence do not break framing, and it resynchronizes on corrupted input.
 - Tests substitute a scripted mock; other transports (e.g. a remote CAN bridge) can be added without touching motor logic.
 
 ### `RobstrideMotor` — high-level API
@@ -58,5 +61,6 @@ The library itself is single-threaded and non-blocking beyond the configured res
 ## Test strategy
 
 - `tests/test_protocol.cpp`: frame encoding byte layouts (verified against worked examples from the RS02 User Manual), scaling round trips, feedback/parameter decoding, fault-bit extraction.
+- `tests/test_at_serial_framing.cpp`: AT serial framing codec — manual worked example, split/back-to-back delivery, resynchronization after garbage or corrupted frames.
 - `tests/test_robstride_motor.cpp`: command/response sequencing against `MockCanInterface` — mode-switch sequence, response matching, timeout behavior, feedback caching.
 - Hardware-in-the-loop verification uses `examples/velocity_control.cpp` on a real bus.

@@ -141,3 +141,19 @@ Reading `loc_kp` (0x701E) from motor 0x7F, host 0xFD:
 request : id=0x11 00FD 7F  data = 1E 70 00 00 00 00 00 00
 response: id=0x11 007F FD  data = 1E 70 00 00 00 00 F0 41   (0x41F00000 = 30.0f)
 ```
+
+## Serial framing of the RobStride USB-CAN module
+
+The official USB-CAN module carries the same CAN frames over a 921600-baud serial link (CH340), wrapping each frame as:
+
+```
+"AT" | 4-byte big-endian ((29-bit id << 3) | 0x4) | DLC | data (DLC bytes) | "\r\n"
+```
+
+Worked example from the manual (§3.3.5) — writing parameter 0x7005 to motor 0x01 from host 0xFD (CAN id `0x1200FD01`):
+
+```
+41 54 90 07 e8 0c 08 05 70 00 00 01 00 00 00 0d 0a
+```
+
+`0x9007E80C = (0x1200FD01 << 3) | 0x4`. Frames received from the module use the same format. Implemented by `AtSerialCanInterface` (`at_serial::EncodeFrame` / `at_serial::FrameParser`).

@@ -1,6 +1,8 @@
 # Host Setup
 
-`robstride_driver` talks to the motor through Linux SocketCAN. No ROS installation is required.
+`robstride_driver` talks to the motor through Linux SocketCAN or through the official RobStride USB-CAN module (serial). No ROS installation is required.
+
+Sections 2–5 apply to SocketCAN adapters; see section 7 for the RobStride USB-CAN module.
 
 ## 1. Install tools
 
@@ -102,3 +104,25 @@ cmake --build build
 ```
 
 The example switches motor id 1 into velocity mode, runs it at 2 rad/s for 3 seconds while printing feedback, then stops and disables it.
+
+## 7. RobStride USB-CAN module (serial)
+
+The official RobStride USB-CAN module uses a CH340 USB-serial bridge (mainline kernel driver), so it appears as `/dev/ttyUSB*` when plugged in — no `ip link` setup is involved.
+
+Grant your user access to the serial port:
+
+```bash
+sudo usermod -aG dialout $USER      # takes effect after re-login
+# or, for the current session only:
+sudo chmod 666 /dev/ttyUSB0
+```
+
+Check the DIP switches on the module: switch 1 must be OFF (ON enters boot mode), switch 2 ON connects the built-in 120 Ω terminator.
+
+Then pass the device path instead of a CAN interface name:
+
+```bash
+./build/examples/velocity_control /dev/ttyUSB0 1 2.0 3.0
+```
+
+`candump`/`cansend` do not work with this module; use the example (or `AtSerialCanInterface` directly) for bus debugging.

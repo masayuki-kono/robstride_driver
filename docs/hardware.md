@@ -7,10 +7,15 @@ This document describes the hardware configuration assumed by `robstride_driver`
 ```
 +------------+   USB    +-----------------+   CAN bus (1 Mbps)   +--------+     +--------+
 | Linux host |----------| USB-CAN adapter |----------------------|  RS02  |-...-|  RS02  |
-| (SocketCAN)|          | (SocketCAN)     |  CAN_H / CAN_L       | id=1   |     | id=N   |
-+------------+          +-----------------+                      +--------+     +--------+
-                              [120R]                                              [120R]
++------------+          +-----------------+  CAN_H / CAN_L       | id=1   |     | id=N   |
+                              [120R]                             +--------+     +--------+
+                                                                                  [120R]
 ```
+
+Two kinds of USB-CAN adapters are supported (see below):
+
+- a **SocketCAN-compatible adapter** (recommended), used via `SocketCanInterface`
+- the **official RobStride USB-CAN module**, used via `AtSerialCanInterface`
 
 ## RS02 motor
 
@@ -40,12 +45,24 @@ Mating connector: AMASS XT30(2+2)-F.G.B.
 
 ## USB-CAN adapter
 
+### SocketCAN adapters (recommended)
+
 Any adapter with a mainline Linux SocketCAN driver works, for example:
 
 - **Canable / candleLight firmware** (`gs_usb` driver) — plug and play
 - Adapters based on `slcan` (serial-line CAN) also work but add latency
 
-The RobStride official USB-CAN module is a **serial AT-command device intended for the vendor's Windows tuning tool**; it does not expose a SocketCAN interface and is *not* supported by this driver.
+Use `SocketCanInterface` with these adapters. Kernel-side receive filtering (`SetMotorIdFilter`) is available.
+
+### RobStride official USB-CAN module
+
+The RobStride official USB-CAN module (the adapter shipped for the vendor's Windows tuning tool) is a CH340 USB-serial bridge in front of a GD32 MCU. It does **not** expose a SocketCAN interface; instead it converts CAN frames to a serial protocol:
+
+- serial link: 921600 baud, 8N1
+- frame format: `"AT"` + 4-byte big-endian `((can_id << 3) | 0x4)` + DLC + data + `"\r\n"`
+- works in AT mode by default (DIP switch 1 OFF); DIP switch 2 ON connects a 120 Ω terminator
+
+Use `AtSerialCanInterface("/dev/ttyUSB0")` with this module. The CH340 driver is in the mainline kernel, so the module shows up as `/dev/ttyUSB*` automatically; add your user to the `dialout` group for access.
 
 ## Bus wiring
 

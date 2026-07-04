@@ -7,9 +7,15 @@
 // feedback, then stops it.
 //
 // Usage:
-//   velocity_control <can-interface> <motor-id> <velocity-rad-s> [duration-s]
-// Example:
+//   velocity_control <interface> <motor-id> <velocity-rad-s> [duration-s]
+//
+// <interface> is either a SocketCAN interface name (e.g. "can0") or the
+// serial device of the official RobStride USB-CAN module (e.g.
+// "/dev/ttyUSB0").
+//
+// Examples:
 //   velocity_control can0 1 2.0 3.0
+//   velocity_control /dev/ttyUSB0 1 2.0 3.0
 
 #include <chrono>
 #include <cstdlib>
@@ -39,7 +45,7 @@ void PrintFeedback(const robstride::Feedback& feedback) {
 int main(int argc, char** argv) {
   if (argc < 4) {
     std::cerr << "usage: " << argv[0]
-              << " <can-interface> <motor-id> <velocity-rad-s> [duration-s]\n";
+              << " <interface> <motor-id> <velocity-rad-s> [duration-s]\n";
     return EXIT_FAILURE;
   }
   const std::string interface_name = argv[1];
@@ -48,8 +54,15 @@ int main(int argc, char** argv) {
   const double duration_s = (argc > 4) ? std::stod(argv[4]) : 3.0;
 
   try {
-    auto can = std::make_shared<robstride::SocketCanInterface>(interface_name);
-    can->SetMotorIdFilter(motor_id);
+    std::shared_ptr<robstride::CanInterface> can;
+    if (interface_name.rfind("/dev/", 0) == 0) {
+      can = std::make_shared<robstride::AtSerialCanInterface>(interface_name);
+    } else {
+      auto socket_can =
+          std::make_shared<robstride::SocketCanInterface>(interface_name);
+      socket_can->SetMotorIdFilter(motor_id);
+      can = socket_can;
+    }
 
     robstride::RobstrideMotor::Config config;
     config.motor_id = motor_id;
