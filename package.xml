@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>robstride_driver</name>
+  <version>0.1.0</version>
+  <description>
+    ROS-independent C++ driver library for RobStride motors over Linux
+    SocketCAN. This package.xml exists only so that colcon can build the
+    plain CMake project inside a ROS 2 workspace.
+  </description>
+  <maintainer email="masayuki-kono@users.noreply.github.com">Masayuki Kono</maintainer>
+  <license>MIT</license>
+
+  <export>
+    <build_type>cmake</build_type>
+  </export>
+</package>

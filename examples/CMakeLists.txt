@@ -1,0 +1,2 @@
+add_executable(velocity_control velocity_control.cpp)
+target_link_libraries(velocity_control robstride_driver::robstride_driver)
