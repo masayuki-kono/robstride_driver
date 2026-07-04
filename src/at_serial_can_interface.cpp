@@ -71,10 +71,11 @@ std::optional<CanFrame> FrameParser::Poll() {
       continue;
     }
 
-    const std::uint32_t packed = (static_cast<std::uint32_t>(buffer_[2]) << 24) |
-                                 (static_cast<std::uint32_t>(buffer_[3]) << 16) |
-                                 (static_cast<std::uint32_t>(buffer_[4]) << 8) |
-                                 static_cast<std::uint32_t>(buffer_[5]);
+    const std::uint32_t packed =
+        (static_cast<std::uint32_t>(buffer_[2]) << 24) |
+        (static_cast<std::uint32_t>(buffer_[3]) << 16) |
+        (static_cast<std::uint32_t>(buffer_[4]) << 8) |
+        static_cast<std::uint32_t>(buffer_[5]);
     CanFrame frame;
     frame.id = (packed >> 3) & 0x1FFFFFFFU;
     frame.dlc = dlc;
@@ -103,7 +104,7 @@ AtSerialCanInterface::AtSerialCanInterface(const std::string& device,
     ThrowErrno("robstride: failed to open serial device '" + device + "'");
   }
 
-  struct termios2 tio{};
+  struct termios2 tio {};
   if (::ioctl(fd_, TCGETS2, &tio) < 0) {
     ::close(fd_);
     fd_ = -1;
@@ -135,8 +136,8 @@ void AtSerialCanInterface::Send(const CanFrame& frame) {
   const auto packet = at_serial::EncodeFrame(frame);
   std::size_t sent = 0;
   while (sent < packet.size()) {
-    const ssize_t written = ::write(fd_, packet.data() + sent,
-                                    packet.size() - sent);
+    const ssize_t written =
+        ::write(fd_, packet.data() + sent, packet.size() - sent);
     if (written < 0) {
       if (errno == EINTR) {
         continue;
@@ -165,7 +166,7 @@ std::optional<CanFrame> AtSerialCanInterface::Receive(
     fd_set read_fds;
     FD_ZERO(&read_fds);
     FD_SET(fd_, &read_fds);
-    struct timeval tv{};
+    struct timeval tv {};
     tv.tv_sec = static_cast<time_t>(remaining.count() / 1000000);
     tv.tv_usec = static_cast<suseconds_t>(remaining.count() % 1000000);
 

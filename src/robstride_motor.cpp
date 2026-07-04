@@ -41,7 +41,7 @@ CanFrame RobstrideMotor::Transceive(const CanFrame& frame,
       throw TimeoutError(DescribeTimeout(config_.motor_id, expected_type));
     }
     if (GetSourceMotorId(*received) != config_.motor_id) {
-      continue; // frame from another motor on the same bus
+      continue;  // frame from another motor on the same bus
     }
     // Opportunistically cache any feedback frame we see.
     if (auto feedback = ParseFeedback(*received, limits_)) {
@@ -59,8 +59,7 @@ Feedback RobstrideMotor::TransceiveFeedback(const CanFrame& frame) {
 }
 
 Feedback RobstrideMotor::Enable() {
-  return TransceiveFeedback(
-      MakeEnableFrame(config_.motor_id, config_.host_id));
+  return TransceiveFeedback(MakeEnableFrame(config_.motor_id, config_.host_id));
 }
 
 Feedback RobstrideMotor::Disable(bool clear_fault) {

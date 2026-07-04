@@ -170,8 +170,7 @@ std::uint8_t GetSourceMotorId(const CanFrame& frame) {
 
 std::optional<Feedback> ParseFeedback(const CanFrame& frame,
                                       const ActuatorLimits& limits) {
-  if (GetCommType(frame) !=
-      static_cast<std::uint8_t>(CommType::kFeedback)) {
+  if (GetCommType(frame) != static_cast<std::uint8_t>(CommType::kFeedback)) {
     return std::nullopt;
   }
   if (frame.dlc < 8) {
@@ -184,14 +183,14 @@ std::optional<Feedback> ParseFeedback(const CanFrame& frame,
   feedback.mode = static_cast<MotorMode>((frame.id >> 22) & 0x03);
   feedback.fault.raw = static_cast<std::uint8_t>((frame.id >> 16) & 0x3F);
 
-  const std::uint16_t pos_u = static_cast<std::uint16_t>(
-      (frame.data[0] << 8) | frame.data[1]);
-  const std::uint16_t vel_u = static_cast<std::uint16_t>(
-      (frame.data[2] << 8) | frame.data[3]);
-  const std::uint16_t torque_u = static_cast<std::uint16_t>(
-      (frame.data[4] << 8) | frame.data[5]);
-  const std::uint16_t temp_u = static_cast<std::uint16_t>(
-      (frame.data[6] << 8) | frame.data[7]);
+  const std::uint16_t pos_u =
+      static_cast<std::uint16_t>((frame.data[0] << 8) | frame.data[1]);
+  const std::uint16_t vel_u =
+      static_cast<std::uint16_t>((frame.data[2] << 8) | frame.data[3]);
+  const std::uint16_t torque_u =
+      static_cast<std::uint16_t>((frame.data[4] << 8) | frame.data[5]);
+  const std::uint16_t temp_u =
+      static_cast<std::uint16_t>((frame.data[6] << 8) | frame.data[7]);
 
   feedback.position = UintToFloat(pos_u, -limits.position, limits.position);
   feedback.velocity = UintToFloat(vel_u, -limits.velocity, limits.velocity);
@@ -201,8 +200,7 @@ std::optional<Feedback> ParseFeedback(const CanFrame& frame,
 }
 
 std::optional<ParamResponse> ParseParamResponse(const CanFrame& frame) {
-  if (GetCommType(frame) !=
-      static_cast<std::uint8_t>(CommType::kReadParam)) {
+  if (GetCommType(frame) != static_cast<std::uint8_t>(CommType::kReadParam)) {
     return std::nullopt;
   }
   if (frame.dlc < 8) {
@@ -211,8 +209,8 @@ std::optional<ParamResponse> ParseParamResponse(const CanFrame& frame) {
 
   ParamResponse response;
   response.motor_id = GetSourceMotorId(frame);
-  response.index = static_cast<std::uint16_t>(
-      frame.data[0] | (frame.data[1] << 8));
+  response.index =
+      static_cast<std::uint16_t>(frame.data[0] | (frame.data[1] << 8));
   std::copy(frame.data.begin() + 4, frame.data.begin() + 8,
             response.data.begin());
   return response;

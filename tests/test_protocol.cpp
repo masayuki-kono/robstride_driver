@@ -18,9 +18,9 @@ const ActuatorLimits& Rs02() { return GetActuatorLimits(ActuatorType::kRs02); }
 
 TEST(ActuatorLimitsTest, Rs02MatchesManual) {
   const auto& limits = Rs02();
-  EXPECT_DOUBLE_EQ(limits.position, 4 * M_PI); // +-12.57 rad
-  EXPECT_DOUBLE_EQ(limits.velocity, 44.0);     // +-44 rad/s
-  EXPECT_DOUBLE_EQ(limits.torque, 17.0);       // +-17 Nm
+  EXPECT_DOUBLE_EQ(limits.position, 4 * M_PI);  // +-12.57 rad
+  EXPECT_DOUBLE_EQ(limits.velocity, 44.0);      // +-44 rad/s
+  EXPECT_DOUBLE_EQ(limits.torque, 17.0);        // +-17 Nm
   EXPECT_DOUBLE_EQ(limits.kp_max, 500.0);
   EXPECT_DOUBLE_EQ(limits.kd_max, 5.0);
 }
@@ -28,9 +28,9 @@ TEST(ActuatorLimitsTest, Rs02MatchesManual) {
 TEST(ScalingTest, FloatToUintClampsAndMaps) {
   EXPECT_EQ(FloatToUint(-17.0, -17.0, 17.0), 0);
   EXPECT_EQ(FloatToUint(17.0, -17.0, 17.0), 65535);
-  EXPECT_EQ(FloatToUint(-100.0, -17.0, 17.0), 0);      // clamped low
-  EXPECT_EQ(FloatToUint(100.0, -17.0, 17.0), 65535);   // clamped high
-  EXPECT_NEAR(FloatToUint(0.0, -17.0, 17.0), 32767, 1); // midpoint
+  EXPECT_EQ(FloatToUint(-100.0, -17.0, 17.0), 0);        // clamped low
+  EXPECT_EQ(FloatToUint(100.0, -17.0, 17.0), 65535);     // clamped high
+  EXPECT_NEAR(FloatToUint(0.0, -17.0, 17.0), 32767, 1);  // midpoint
 }
 
 TEST(ScalingTest, RoundTripIsAccurate) {
@@ -38,7 +38,7 @@ TEST(ScalingTest, RoundTripIsAccurate) {
   for (const double value : values) {
     const std::uint16_t encoded = FloatToUint(value, -44.0, 44.0);
     const double decoded = UintToFloat(encoded, -44.0, 44.0);
-    EXPECT_NEAR(decoded, value, 88.0 / 65535.0); // one LSB
+    EXPECT_NEAR(decoded, value, 88.0 / 65535.0);  // one LSB
   }
 }
 
@@ -76,7 +76,7 @@ TEST(EncodeTest, ReadParamFrame) {
   const CanFrame frame =
       MakeReadParamFrame(kMotorId, kHostId, param_index::kRunMode);
   EXPECT_EQ(frame.id, 0x1100FD01U);
-  EXPECT_EQ(frame.data[0], 0x05); // index low byte first
+  EXPECT_EQ(frame.data[0], 0x05);  // index low byte first
   EXPECT_EQ(frame.data[1], 0x70);
   EXPECT_EQ(frame.data[4], 0x00);
 }
@@ -94,9 +94,9 @@ TEST(EncodeTest, WriteParamFloatFrame) {
 }
 
 TEST(EncodeTest, WriteParamUint8Frame) {
-  const CanFrame frame = MakeWriteParamFrame(
-      kMotorId, kHostId, param_index::kRunMode,
-      static_cast<std::uint8_t>(RunMode::kVelocity));
+  const CanFrame frame =
+      MakeWriteParamFrame(kMotorId, kHostId, param_index::kRunMode,
+                          static_cast<std::uint8_t>(RunMode::kVelocity));
   EXPECT_EQ(frame.id, 0x1200FD01U);
   EXPECT_EQ(frame.data[4], 2);
   EXPECT_EQ(frame.data[5], 0);
@@ -115,7 +115,7 @@ TEST(EncodeTest, MotionControlFrame) {
   EXPECT_NEAR(torque_u, 32767, 1);
   const std::uint16_t pos_u = (frame.data[0] << 8) | frame.data[1];
   EXPECT_NEAR(pos_u, 32767, 1);
-  EXPECT_EQ(frame.data[4], 0); // kp = 0 -> 0x0000
+  EXPECT_EQ(frame.data[4], 0);  // kp = 0 -> 0x0000
   EXPECT_EQ(frame.data[5], 0);
 }
 
@@ -123,10 +123,11 @@ TEST(DecodeTest, ParseFeedback) {
   CanFrame frame;
   // type 2, mode=run (bit23-22 = 2), no fault, motor id 0x01, host 0xFD
   frame.id = (0x02U << 24) | (0x02U << 22) | (kMotorId << 8) | kHostId;
-  const std::uint16_t pos_u = FloatToUint(1.0, -Rs02().position, Rs02().position);
+  const std::uint16_t pos_u =
+      FloatToUint(1.0, -Rs02().position, Rs02().position);
   const std::uint16_t vel_u = FloatToUint(-2.0, -44.0, 44.0);
   const std::uint16_t torque_u = FloatToUint(3.5, -17.0, 17.0);
-  const std::uint16_t temp_u = 305; // 30.5 C
+  const std::uint16_t temp_u = 305;  // 30.5 C
   frame.data = {
       static_cast<std::uint8_t>(pos_u >> 8),
       static_cast<std::uint8_t>(pos_u & 0xFF),
@@ -191,8 +192,7 @@ TEST(DecodeTest, ParseParamResponseUint8) {
   const auto response = ParseParamResponse(frame);
   ASSERT_TRUE(response.has_value());
   EXPECT_EQ(response->index, param_index::kRunMode);
-  EXPECT_EQ(response->AsUint8(),
-            static_cast<std::uint8_t>(RunMode::kVelocity));
+  EXPECT_EQ(response->AsUint8(), static_cast<std::uint8_t>(RunMode::kVelocity));
 }
 
 TEST(DecodeTest, GetSourceMotorId) {

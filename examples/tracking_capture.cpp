@@ -76,10 +76,10 @@ int main(int argc, char** argv) {
   const std::vector<Segment> position_profile = {
       {1.0, 0.0}, {4.0, kPi}, {4.0, -kPi}, {4.0, 0.0}};
 
-  constexpr double kSamplePeriodS = 0.01;   // 100 Hz command/feedback
-  constexpr double kCurrentLimitA = 10.0;   // velocity mode
-  constexpr double kAccelerationRad = 20.0; // velocity mode [rad/s^2]
-  constexpr double kCspSpeedLimit = 4.0;    // position mode [rad/s]
+  constexpr double kSamplePeriodS = 0.01;    // 100 Hz command/feedback
+  constexpr double kCurrentLimitA = 10.0;    // velocity mode
+  constexpr double kAccelerationRad = 20.0;  // velocity mode [rad/s^2]
+  constexpr double kCspSpeedLimit = 4.0;     // position mode [rad/s]
 
   try {
     std::shared_ptr<robstride::CanInterface> can;

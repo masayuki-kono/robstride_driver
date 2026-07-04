@@ -29,11 +29,11 @@ enum class ActuatorType : std::uint8_t {
 /// All ranges are symmetric: a value maps linearly from
 /// [-limit, +limit] to [0, 65535].
 struct ActuatorLimits {
-  double position;      ///< [rad]   feedback/command angle range (+-)
-  double velocity;      ///< [rad/s] feedback/command velocity range (+-)
-  double torque;        ///< [Nm]    feedback/command torque range (+-)
-  double kp_max;        ///< motion-control Kp range [0, kp_max]
-  double kd_max;        ///< motion-control Kd range [0, kd_max]
+  double position;  ///< [rad]   feedback/command angle range (+-)
+  double velocity;  ///< [rad/s] feedback/command velocity range (+-)
+  double torque;    ///< [Nm]    feedback/command torque range (+-)
+  double kp_max;    ///< motion-control Kp range [0, kp_max]
+  double kd_max;    ///< motion-control Kd range [0, kd_max]
 };
 
 /// Returns the encode/decode limits for the given actuator type.
