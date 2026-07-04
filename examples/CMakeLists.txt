@@ -1,2 +1,5 @@
 add_executable(velocity_control velocity_control.cpp)
 target_link_libraries(velocity_control robstride_driver::robstride_driver)
+
+add_executable(tracking_capture tracking_capture.cpp)
+target_link_libraries(tracking_capture robstride_driver::robstride_driver)

@@ -14,6 +14,20 @@ A ROS-independent C++ driver library for [RobStride](https://www.robstride.com/)
 - Transport abstraction (`CanInterface`) so the protocol and motor logic are unit-testable without hardware
 - Validated against the **RobStride RS02**; range tables for RS00–RS06 are included
 
+## Tracking performance (RS02, real hardware)
+
+Measured on an unloaded, as-delivered RS02 (see [docs/test_results.md](docs/test_results.md) for preconditions and how to reproduce with [examples/tracking_capture.cpp](examples/tracking_capture.cpp)).
+
+Velocity mode — the actual velocity follows step commands (0 → +2 → +4 → −2 → 0 rad/s) with a steady-state mean error below 0.3 %:
+
+![Velocity mode tracking](docs/images/velocity_tracking.png)
+
+CSP position mode — π-sized position steps are executed as constant-speed ramps bounded by the configured 4 rad/s limit, with a steady-state error below 0.002 rad:
+
+![CSP position mode tracking](docs/images/position_tracking.png)
+
+See [docs/test_results.md](docs/test_results.md) for the test setup and detailed statistics.
+
 ## Supported motors
 
 | Model | Status |
@@ -104,6 +118,7 @@ The repository also ships a `package.xml` (`<build_type>cmake</build_type>`) so 
 | [docs/setup.md](docs/setup.md) | Host setup: SocketCAN configuration, persistence, vcan testing |
 | [docs/architecture.md](docs/architecture.md) | Library layering, class responsibilities, error handling, test strategy |
 | [docs/protocol.md](docs/protocol.md) | RobStride private CAN protocol summary (frame layouts, parameter table) |
+| [docs/test_results.md](docs/test_results.md) | Hardware-in-the-loop command-tracking results (velocity / CSP position) |
 
 ## License
 
