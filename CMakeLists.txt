@@ -13,6 +13,7 @@ add_library(${PROJECT_NAME}
   src/protocol.cpp
   src/robstride_motor.cpp
   src/socket_can_interface.cpp
+  src/stub_can_interface.cpp
 )
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 

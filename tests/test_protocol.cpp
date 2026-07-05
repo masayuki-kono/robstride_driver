@@ -202,5 +202,82 @@ TEST(DecodeTest, GetSourceMotorId) {
   EXPECT_EQ(GetSourceMotorId(frame), 0x42);
 }
 
+TEST(MotorSideEncodeTest, FeedbackFrameRoundTrip) {
+  Feedback feedback;
+  feedback.motor_id = kMotorId;
+  feedback.host_id = kHostId;
+  feedback.mode = MotorMode::kRun;
+  feedback.fault.raw = 0x05;  // undervoltage + overtemperature
+  feedback.position = 1.0;
+  feedback.velocity = -2.0;
+  feedback.torque = 3.5;
+  feedback.temperature = 30.5;
+
+  const CanFrame frame = MakeFeedbackFrame(feedback, Rs02());
+  const auto decoded = ParseFeedback(frame, Rs02());
+  ASSERT_TRUE(decoded.has_value());
+  EXPECT_EQ(decoded->motor_id, kMotorId);
+  EXPECT_EQ(decoded->host_id, kHostId);
+  EXPECT_EQ(decoded->mode, MotorMode::kRun);
+  EXPECT_EQ(decoded->fault.raw, 0x05);
+  EXPECT_NEAR(decoded->position, 1.0, 1e-3);
+  EXPECT_NEAR(decoded->velocity, -2.0, 1e-2);
+  EXPECT_NEAR(decoded->torque, 3.5, 1e-3);
+  EXPECT_NEAR(decoded->temperature, 30.5, 1e-9);
+}
+
+TEST(MotorSideEncodeTest, ParamResponseFrameRoundTrip) {
+  const CanFrame float_frame =
+      MakeParamResponseFrame(kMotorId, kHostId, param_index::kSpdRef, 4.5F);
+  const auto float_response = ParseParamResponse(float_frame);
+  ASSERT_TRUE(float_response.has_value());
+  EXPECT_EQ(float_response->motor_id, kMotorId);
+  EXPECT_EQ(float_response->index, param_index::kSpdRef);
+  EXPECT_FLOAT_EQ(float_response->AsFloat(), 4.5F);
+
+  const CanFrame uint8_frame =
+      MakeParamResponseFrame(kMotorId, kHostId, param_index::kRunMode,
+                             static_cast<std::uint8_t>(RunMode::kVelocity));
+  const auto uint8_response = ParseParamResponse(uint8_frame);
+  ASSERT_TRUE(uint8_response.has_value());
+  EXPECT_EQ(uint8_response->AsUint8(),
+            static_cast<std::uint8_t>(RunMode::kVelocity));
+}
+
+TEST(CommandDecodeTest, ParseParamReadRequestRoundTrip) {
+  const CanFrame frame =
+      MakeReadParamFrame(kMotorId, kHostId, param_index::kRunMode);
+  const auto request = ParseParamReadRequest(frame);
+  ASSERT_TRUE(request.has_value());
+  EXPECT_EQ(request->motor_id, kMotorId);
+  EXPECT_EQ(request->host_id, kHostId);
+  EXPECT_EQ(request->index, param_index::kRunMode);
+}
+
+TEST(CommandDecodeTest, ParseParamWriteRequestRoundTrip) {
+  const CanFrame float_frame =
+      MakeWriteParamFrame(kMotorId, kHostId, param_index::kSpdRef, 4.5F);
+  const auto float_request = ParseParamWriteRequest(float_frame);
+  ASSERT_TRUE(float_request.has_value());
+  EXPECT_EQ(float_request->motor_id, kMotorId);
+  EXPECT_EQ(float_request->host_id, kHostId);
+  EXPECT_EQ(float_request->index, param_index::kSpdRef);
+  EXPECT_FLOAT_EQ(float_request->AsFloat(), 4.5F);
+
+  const CanFrame uint8_frame =
+      MakeWriteParamFrame(kMotorId, kHostId, param_index::kRunMode,
+                          static_cast<std::uint8_t>(RunMode::kPositionCsp));
+  const auto uint8_request = ParseParamWriteRequest(uint8_frame);
+  ASSERT_TRUE(uint8_request.has_value());
+  EXPECT_EQ(uint8_request->AsUint8(),
+            static_cast<std::uint8_t>(RunMode::kPositionCsp));
+}
+
+TEST(CommandDecodeTest, ParseRequestsRejectOtherTypes) {
+  const CanFrame enable = MakeEnableFrame(kMotorId, kHostId);
+  EXPECT_FALSE(ParseParamReadRequest(enable).has_value());
+  EXPECT_FALSE(ParseParamWriteRequest(enable).has_value());
+}
+
 }  // namespace
 }  // namespace robstride

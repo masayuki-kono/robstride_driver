@@ -10,9 +10,10 @@ A ROS-independent C++ driver library for [RobStride](https://www.robstride.com/)
 ## Features
 
 - Pure C++20 / CMake library — no ROS or other framework dependencies
-- Two transports:
+- Three transports:
   - Linux SocketCAN (`PF_CAN` / `SOCK_RAW`), works with any SocketCAN-compatible USB-CAN adapter
   - The official RobStride USB-CAN module (CH340 serial bridge, AT framing, 921600 baud)
+  - `StubCanInterface`, an in-process motor simulator for running applications without hardware (per-axis mixing with real transports is possible)
 - Implements the RobStride private CAN protocol (29-bit extended frames, 1 Mbps)
 - High-level motor API: enable/disable, velocity mode, CSP position mode, operation (MIT) control, feedback parsing, parameter read/write, mechanical zero
 - `PositionUnwrapper` helper that converts the wrapped feedback position (±4π on RS02) into a continuous position

@@ -51,6 +51,12 @@ float ParamResponse::AsFloat() const {
   return value;
 }
 
+float ParamWriteRequest::AsFloat() const {
+  float value = 0.0F;
+  std::memcpy(&value, data.data(), sizeof(value));
+  return value;
+}
+
 std::uint16_t FloatToUint(double x, double min, double max, int bits) {
   x = std::clamp(x, min, max);
   const double span = max - min;
@@ -162,12 +168,105 @@ CanFrame MakeMotionControlFrame(std::uint8_t motor_id, double torque,
   return frame;
 }
 
+CanFrame MakeFeedbackFrame(const Feedback& feedback,
+                           const ActuatorLimits& limits) {
+  CanFrame frame;
+  const std::uint16_t data_area2 =
+      static_cast<std::uint16_t>(static_cast<std::uint16_t>(feedback.mode)
+                                 << 14) |
+      static_cast<std::uint16_t>((feedback.fault.raw & 0x3F) << 8) |
+      feedback.motor_id;
+  frame.id = MakeId(CommType::kFeedback, data_area2, feedback.host_id);
+
+  const std::uint16_t pos_u =
+      FloatToUint(feedback.position, -limits.position, limits.position);
+  const std::uint16_t vel_u =
+      FloatToUint(feedback.velocity, -limits.velocity, limits.velocity);
+  const std::uint16_t torque_u =
+      FloatToUint(feedback.torque, -limits.torque, limits.torque);
+  const auto temp_u =
+      static_cast<std::uint16_t>(std::lround(feedback.temperature * 10.0));
+
+  frame.data[0] = static_cast<std::uint8_t>(pos_u >> 8);
+  frame.data[1] = static_cast<std::uint8_t>(pos_u & 0xFF);
+  frame.data[2] = static_cast<std::uint8_t>(vel_u >> 8);
+  frame.data[3] = static_cast<std::uint8_t>(vel_u & 0xFF);
+  frame.data[4] = static_cast<std::uint8_t>(torque_u >> 8);
+  frame.data[5] = static_cast<std::uint8_t>(torque_u & 0xFF);
+  frame.data[6] = static_cast<std::uint8_t>(temp_u >> 8);
+  frame.data[7] = static_cast<std::uint8_t>(temp_u & 0xFF);
+  return frame;
+}
+
+namespace {
+
+CanFrame MakeParamResponseFrameBase(std::uint8_t motor_id, std::uint8_t host_id,
+                                    std::uint16_t index) {
+  CanFrame frame;
+  frame.id = MakeId(CommType::kReadParam, motor_id, host_id);
+  frame.data[0] = static_cast<std::uint8_t>(index & 0xFF);
+  frame.data[1] = static_cast<std::uint8_t>(index >> 8);
+  return frame;
+}
+
+}  // namespace
+
+CanFrame MakeParamResponseFrame(std::uint8_t motor_id, std::uint8_t host_id,
+                                std::uint16_t index, float value) {
+  CanFrame frame = MakeParamResponseFrameBase(motor_id, host_id, index);
+  std::memcpy(&frame.data[4], &value, sizeof(value));
+  return frame;
+}
+
+CanFrame MakeParamResponseFrame(std::uint8_t motor_id, std::uint8_t host_id,
+                                std::uint16_t index, std::uint8_t value) {
+  CanFrame frame = MakeParamResponseFrameBase(motor_id, host_id, index);
+  frame.data[4] = value;
+  return frame;
+}
+
 std::uint8_t GetCommType(const CanFrame& frame) {
   return static_cast<std::uint8_t>((frame.id >> 24) & 0x1F);
 }
 
 std::uint8_t GetSourceMotorId(const CanFrame& frame) {
   return static_cast<std::uint8_t>((frame.id >> 8) & 0xFF);
+}
+
+std::uint8_t GetTargetMotorId(const CanFrame& frame) {
+  return static_cast<std::uint8_t>(frame.id & 0xFF);
+}
+
+std::uint8_t GetHostId(const CanFrame& frame) {
+  return static_cast<std::uint8_t>((frame.id >> 8) & 0xFF);
+}
+
+std::optional<ParamReadRequest> ParseParamReadRequest(const CanFrame& frame) {
+  if (GetCommType(frame) != static_cast<std::uint8_t>(CommType::kReadParam)) {
+    return std::nullopt;
+  }
+
+  ParamReadRequest request;
+  request.motor_id = GetTargetMotorId(frame);
+  request.host_id = GetHostId(frame);
+  request.index =
+      static_cast<std::uint16_t>(frame.data[0] | (frame.data[1] << 8));
+  return request;
+}
+
+std::optional<ParamWriteRequest> ParseParamWriteRequest(const CanFrame& frame) {
+  if (GetCommType(frame) != static_cast<std::uint8_t>(CommType::kWriteParam)) {
+    return std::nullopt;
+  }
+
+  ParamWriteRequest request;
+  request.motor_id = GetTargetMotorId(frame);
+  request.host_id = GetHostId(frame);
+  request.index =
+      static_cast<std::uint16_t>(frame.data[0] | (frame.data[1] << 8));
+  std::copy(frame.data.begin() + 4, frame.data.begin() + 8,
+            request.data.begin());
+  return request;
 }
 
 std::optional<Feedback> ParseFeedback(const CanFrame& frame,
