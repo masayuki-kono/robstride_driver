@@ -15,6 +15,7 @@
 #include <cstring>
 #include <stdexcept>
 #include <system_error>
+#include <utility>
 
 namespace robstride {
 
@@ -59,6 +60,9 @@ SocketCanInterface::~SocketCanInterface() {
   }
 }
 
+// Mutates kernel-side socket state, so it stays non-const even though it
+// does not touch any data member.
+// NOLINTNEXTLINE(readability-make-member-function-const)
 void SocketCanInterface::SetMotorIdFilter(std::uint8_t motor_id) {
   struct can_filter filter {};
   filter.can_id = (static_cast<canid_t>(motor_id) << 8) | CAN_EFF_FLAG;
@@ -76,7 +80,7 @@ void SocketCanInterface::Send(const CanFrame& frame) {
   std::memcpy(raw.data, frame.data.data(), frame.data.size());
 
   const ssize_t written = ::write(socket_fd_, &raw, sizeof(raw));
-  if (written != static_cast<ssize_t>(sizeof(raw))) {
+  if (std::cmp_not_equal(written, sizeof(raw))) {
     ThrowErrno("robstride: failed to send CAN frame on '" + interface_name_ +
                "'");
   }
@@ -105,8 +109,8 @@ std::optional<CanFrame> SocketCanInterface::Receive(
   if (received < 0) {
     ThrowErrno("robstride: failed to read CAN frame");
   }
-  if (received != static_cast<ssize_t>(sizeof(raw)) ||
-      !(raw.can_id & CAN_EFF_FLAG)) {
+  if (std::cmp_not_equal(received, sizeof(raw)) ||
+      (raw.can_id & CAN_EFF_FLAG) == 0) {
     // Ignore short reads and non-extended frames.
     return std::nullopt;
   }

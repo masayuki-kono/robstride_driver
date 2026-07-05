@@ -99,15 +99,15 @@ class RobstrideMotor {
   Feedback WriteParam(std::uint16_t index, std::uint8_t value);
 
   /// Latest feedback received from the motor, if any.
-  const std::optional<Feedback>& last_feedback() const {
+  [[nodiscard]] const std::optional<Feedback>& last_feedback() const {
     return last_feedback_;
   }
 
   /// CAN id of the controlled motor.
-  std::uint8_t motor_id() const { return config_.motor_id; }
+  [[nodiscard]] std::uint8_t motor_id() const { return config_.motor_id; }
 
   /// Fixed-point scaling ranges of the configured actuator model.
-  const ActuatorLimits& limits() const { return limits_; }
+  [[nodiscard]] const ActuatorLimits& limits() const { return limits_; }
 
  private:
   /// Sends `frame` and waits for a response with communication type

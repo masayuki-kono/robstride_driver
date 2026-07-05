@@ -3,6 +3,7 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
 #include <cmath>
 #include <cstring>
 
@@ -34,7 +35,7 @@ TEST(ScalingTest, FloatToUintClampsAndMaps) {
 }
 
 TEST(ScalingTest, RoundTripIsAccurate) {
-  const double values[] = {-40.0, -1.5, 0.0, 0.001, 12.3, 44.0};
+  const std::array<double, 6> values = {-40.0, -1.5, 0.0, 0.001, 12.3, 44.0};
   for (const double value : values) {
     const std::uint16_t encoded = FloatToUint(value, -44.0, 44.0);
     const double decoded = UintToFloat(encoded, -44.0, 44.0);

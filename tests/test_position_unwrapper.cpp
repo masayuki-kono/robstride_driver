@@ -33,17 +33,17 @@ TEST(PositionUnwrapper, SmallDeltasUnchanged) {
 TEST(PositionUnwrapper, PositiveWrap) {
   PositionUnwrapper unwrapper(kSpan);
   // Rotating forward: raw jumps from just below +4 pi to just above -4 pi.
-  unwrapper.Update(4.0 * kPi - 0.1);
-  const double continuous = unwrapper.Update(-4.0 * kPi + 0.1);
-  EXPECT_NEAR(continuous, 4.0 * kPi + 0.1, 1e-9);
+  unwrapper.Update((4.0 * kPi) - 0.1);
+  const double continuous = unwrapper.Update((-4.0 * kPi) + 0.1);
+  EXPECT_NEAR(continuous, (4.0 * kPi) + 0.1, 1e-9);
 }
 
 TEST(PositionUnwrapper, NegativeWrap) {
   PositionUnwrapper unwrapper(kSpan);
   // Rotating backward: raw jumps from just above -4 pi to just below +4 pi.
-  unwrapper.Update(-4.0 * kPi + 0.1);
-  const double continuous = unwrapper.Update(4.0 * kPi - 0.1);
-  EXPECT_NEAR(continuous, -4.0 * kPi - 0.1, 1e-9);
+  unwrapper.Update((-4.0 * kPi) + 0.1);
+  const double continuous = unwrapper.Update((4.0 * kPi) - 0.1);
+  EXPECT_NEAR(continuous, -(4.0 * kPi) - 0.1, 1e-9);
 }
 
 TEST(PositionUnwrapper, MultipleRevolutionsAccumulate) {
@@ -70,8 +70,8 @@ TEST(PositionUnwrapper, MultipleRevolutionsAccumulate) {
 
 TEST(PositionUnwrapper, ResetForgetsOffset) {
   PositionUnwrapper unwrapper(kSpan);
-  unwrapper.Update(4.0 * kPi - 0.1);
-  unwrapper.Update(-4.0 * kPi + 0.1);  // wrapped once
+  unwrapper.Update((4.0 * kPi) - 0.1);
+  unwrapper.Update((-4.0 * kPi) + 0.1);  // wrapped once
   unwrapper.Reset();
   EXPECT_FALSE(unwrapper.position().has_value());
   EXPECT_DOUBLE_EQ(unwrapper.Update(1.0), 1.0);

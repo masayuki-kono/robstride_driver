@@ -5,6 +5,7 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
 #include <vector>
 
 #include "robstride_driver/at_serial_can_interface.hpp"
@@ -15,7 +16,7 @@ namespace {
 // Worked example from the RS02 User Manual, section 3.3.5:
 //   41 54 90 07 e8 0c 08 05 70 00 00 01 00 00 00 0d 0a
 // carries CAN id 0x1200FD01 (comm type 18, host 0xFD, motor 0x01).
-const std::vector<std::uint8_t> kManualExample = {
+constexpr std::array<std::uint8_t, 17> kManualExample = {
     0x41, 0x54, 0x90, 0x07, 0xe8, 0x0c, 0x08, 0x05, 0x70,
     0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x0d, 0x0a};
 
@@ -25,7 +26,9 @@ TEST(AtSerialEncode, MatchesManualExample) {
   frame.dlc = 8;
   frame.data = {0x05, 0x70, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00};
 
-  EXPECT_EQ(EncodeFrame(frame), kManualExample);
+  EXPECT_EQ(
+      EncodeFrame(frame),
+      std::vector<std::uint8_t>(kManualExample.begin(), kManualExample.end()));
 }
 
 TEST(AtSerialEncode, ShortDlc) {

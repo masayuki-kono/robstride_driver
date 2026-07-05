@@ -3,6 +3,7 @@
 
 #include "robstride_driver/robstride_motor.hpp"
 
+#include <stdexcept>
 #include <string>
 
 namespace robstride {
@@ -13,6 +14,14 @@ std::string DescribeTimeout(std::uint8_t motor_id, CommType expected) {
   return "robstride: motor 0x" + std::to_string(motor_id) +
          " did not answer (expected communication type " +
          std::to_string(static_cast<int>(expected)) + ")";
+}
+
+ParamResponse ParseParamResponseOrThrow(const CanFrame& frame) {
+  const auto response = ParseParamResponse(frame);
+  if (!response) {
+    throw std::runtime_error("robstride: malformed parameter response frame");
+  }
+  return *response;
 }
 
 }  // namespace
@@ -55,7 +64,11 @@ CanFrame RobstrideMotor::Transceive(const CanFrame& frame,
 
 Feedback RobstrideMotor::TransceiveFeedback(const CanFrame& frame) {
   const CanFrame response = Transceive(frame, CommType::kFeedback);
-  return *ParseFeedback(response, limits_);
+  const auto feedback = ParseFeedback(response, limits_);
+  if (!feedback) {
+    throw std::runtime_error("robstride: malformed feedback frame");
+  }
+  return *feedback;
 }
 
 Feedback RobstrideMotor::Enable() {
@@ -116,14 +129,14 @@ float RobstrideMotor::ReadParamFloat(std::uint16_t index) {
   const CanFrame response =
       Transceive(MakeReadParamFrame(config_.motor_id, config_.host_id, index),
                  CommType::kReadParam);
-  return ParseParamResponse(response)->AsFloat();
+  return ParseParamResponseOrThrow(response).AsFloat();
 }
 
 std::uint8_t RobstrideMotor::ReadParamUint8(std::uint16_t index) {
   const CanFrame response =
       Transceive(MakeReadParamFrame(config_.motor_id, config_.host_id, index),
                  CommType::kReadParam);
-  return ParseParamResponse(response)->AsUint8();
+  return ParseParamResponseOrThrow(response).AsUint8();
 }
 
 Feedback RobstrideMotor::WriteParam(std::uint16_t index, float value) {

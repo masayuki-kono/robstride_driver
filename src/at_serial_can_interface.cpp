@@ -12,6 +12,7 @@
 // including the module's 921600 default, can be configured uniformly.
 #include <asm/termbits.h>
 
+#include <array>
 #include <cerrno>
 #include <cstring>
 #include <system_error>
@@ -80,7 +81,8 @@ std::optional<CanFrame> FrameParser::Poll() {
     frame.id = (packed >> 3) & 0x1FFFFFFFU;
     frame.dlc = dlc;
     std::memcpy(frame.data.data(), buffer_.data() + kHeaderSize, dlc);
-    buffer_.erase(buffer_.begin(), buffer_.begin() + total);
+    buffer_.erase(buffer_.begin(),
+                  buffer_.begin() + static_cast<std::ptrdiff_t>(total));
     return frame;
   }
   return std::nullopt;
@@ -181,8 +183,8 @@ std::optional<CanFrame> AtSerialCanInterface::Receive(
       return std::nullopt;  // timeout
     }
 
-    std::uint8_t chunk[256];
-    const ssize_t received = ::read(fd_, chunk, sizeof(chunk));
+    std::array<std::uint8_t, 256> chunk;
+    const ssize_t received = ::read(fd_, chunk.data(), chunk.size());
     if (received < 0) {
       if (errno == EINTR) {
         continue;
@@ -190,7 +192,7 @@ std::optional<CanFrame> AtSerialCanInterface::Receive(
       ThrowErrno("robstride: failed to read from '" + device_ + "'");
     }
     if (received > 0) {
-      parser_.Push(chunk, static_cast<std::size_t>(received));
+      parser_.Push(chunk.data(), static_cast<std::size_t>(received));
     }
   }
 }

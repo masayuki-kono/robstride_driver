@@ -24,7 +24,8 @@ class MockCanInterface : public CanInterface {
  public:
   void Send(const CanFrame& frame) override { sent.push_back(frame); }
 
-  std::optional<CanFrame> Receive(std::chrono::milliseconds) override {
+  std::optional<CanFrame> Receive(
+      std::chrono::milliseconds /*timeout*/) override {
     if (responses.empty()) {
       return std::nullopt;
     }

@@ -98,13 +98,23 @@ enum class MotorMode : std::uint8_t {
 struct FaultStatus {
   std::uint8_t raw = 0;  ///< 6-bit raw fault field (bit21-16)
 
-  bool undervoltage() const { return raw & 0x01; }       // bit16
-  bool overcurrent() const { return raw & 0x02; }        // bit17
-  bool overtemperature() const { return raw & 0x04; }    // bit18
-  bool magnetic_encoding() const { return raw & 0x08; }  // bit19
-  bool stall_overload() const { return raw & 0x10; }     // bit20
-  bool uncalibrated() const { return raw & 0x20; }       // bit21
-  bool any() const { return raw != 0; }
+  [[nodiscard]] bool undervoltage() const {
+    return (raw & 0x01) != 0;
+  }                                                                     // bit16
+  [[nodiscard]] bool overcurrent() const { return (raw & 0x02) != 0; }  // bit17
+  [[nodiscard]] bool overtemperature() const {                          // bit18
+    return (raw & 0x04) != 0;
+  }
+  [[nodiscard]] bool magnetic_encoding() const {  // bit19
+    return (raw & 0x08) != 0;
+  }
+  [[nodiscard]] bool stall_overload() const {
+    return (raw & 0x10) != 0;
+  }  // bit20
+  [[nodiscard]] bool uncalibrated() const {
+    return (raw & 0x20) != 0;
+  }  // bit21
+  [[nodiscard]] bool any() const { return raw != 0; }
 };
 
 /// Decoded motor feedback (communication type 2).
@@ -125,8 +135,8 @@ struct ParamResponse {
   std::uint16_t index = 0;             ///< parameter index (0x7000 family)
   std::array<std::uint8_t, 4> data{};  ///< little-endian value bytes
 
-  float AsFloat() const;
-  std::uint8_t AsUint8() const { return data[0]; }
+  [[nodiscard]] float AsFloat() const;
+  [[nodiscard]] std::uint8_t AsUint8() const { return data[0]; }
 };
 
 // ---------------------------------------------------------------------------

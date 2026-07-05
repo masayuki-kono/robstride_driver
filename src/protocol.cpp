@@ -4,20 +4,22 @@
 #include "robstride_driver/protocol.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstring>
+#include <numbers>
 #include <stdexcept>
 
 namespace robstride {
 
 namespace {
 
-constexpr double kPi = 3.14159265358979323846;
+constexpr double kPi = std::numbers::pi;
 
 // Ranges from the vendor sample (robstride_ros_sample). RS02 values match
 // the RS02 User Manual: P +-4*pi (=12.57) rad, V +-44 rad/s, T +-17 Nm,
 // Kp 0-500, Kd 0-5.
-constexpr ActuatorLimits kLimitsTable[] = {
+constexpr std::array<ActuatorLimits, 7> kLimitsTable = {{
     /* RS00 */ {4 * kPi, 50.0, 17.0, 500.0, 5.0},
     /* RS01 */ {4 * kPi, 44.0, 17.0, 500.0, 5.0},
     /* RS02 */ {4 * kPi, 44.0, 17.0, 500.0, 5.0},
@@ -25,7 +27,7 @@ constexpr ActuatorLimits kLimitsTable[] = {
     /* RS04 */ {4 * kPi, 15.0, 120.0, 5000.0, 100.0},
     /* RS05 */ {4 * kPi, 33.0, 17.0, 500.0, 5.0},
     /* RS06 */ {4 * kPi, 20.0, 36.0, 5000.0, 100.0},
-};
+}};
 
 std::uint32_t MakeId(CommType type, std::uint16_t data_area2,
                      std::uint8_t dest) {
@@ -37,7 +39,7 @@ std::uint32_t MakeId(CommType type, std::uint16_t data_area2,
 
 const ActuatorLimits& GetActuatorLimits(ActuatorType type) {
   const auto index = static_cast<std::size_t>(type);
-  if (index >= std::size(kLimitsTable)) {
+  if (index >= kLimitsTable.size()) {
     throw std::out_of_range("robstride: unknown actuator type");
   }
   return kLimitsTable[index];
@@ -58,7 +60,7 @@ std::uint16_t FloatToUint(double x, double min, double max, int bits) {
 
 double UintToFloat(std::uint16_t value, double min, double max, int bits) {
   const double span = max - min;
-  return static_cast<double>(value) * span / ((1 << bits) - 1) + min;
+  return (static_cast<double>(value) * span / ((1 << bits) - 1)) + min;
 }
 
 CanFrame MakeEnableFrame(std::uint8_t motor_id, std::uint8_t host_id) {
@@ -183,13 +185,13 @@ std::optional<Feedback> ParseFeedback(const CanFrame& frame,
   feedback.mode = static_cast<MotorMode>((frame.id >> 22) & 0x03);
   feedback.fault.raw = static_cast<std::uint8_t>((frame.id >> 16) & 0x3F);
 
-  const std::uint16_t pos_u =
+  const auto pos_u =
       static_cast<std::uint16_t>((frame.data[0] << 8) | frame.data[1]);
-  const std::uint16_t vel_u =
+  const auto vel_u =
       static_cast<std::uint16_t>((frame.data[2] << 8) | frame.data[3]);
-  const std::uint16_t torque_u =
+  const auto torque_u =
       static_cast<std::uint16_t>((frame.data[4] << 8) | frame.data[5]);
-  const std::uint16_t temp_u =
+  const auto temp_u =
       static_cast<std::uint16_t>((frame.data[6] << 8) | frame.data[7]);
 
   feedback.position = UintToFloat(pos_u, -limits.position, limits.position);

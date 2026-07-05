@@ -47,7 +47,7 @@ class PositionUnwrapper {
   }
 
   /// Latest continuous position (nullopt before the first Update call).
-  std::optional<double> position() const {
+  [[nodiscard]] std::optional<double> position() const {
     if (!last_wrapped_) {
       return std::nullopt;
     }
