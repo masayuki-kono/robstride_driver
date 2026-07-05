@@ -2,7 +2,29 @@
 
 Summary of the RobStride private CAN protocol as implemented by this driver. Authoritative source: **RS02 User Manual, chapter 4 "Driver protocol and instructions"** (`third_party/Product_Information`, to be consulted from the vendor's download center once the submodule is removed).
 
-The motor also supports CANopen and MIT protocols (selectable via communication type 25); this driver implements the **private protocol only**, which is the power-on default.
+## Supported protocol variants
+
+The motor supports three protocols on the CAN bus. They are selected with
+communication type 25 (switch protocol); a power cycle is required after switching.
+
+| Protocol | Manual | Summary | This driver |
+|----------|--------|---------|-------------|
+| Private protocol | Ch. 4 "Driver protocol and instructions" | RobStride proprietary protocol. 29-bit extended frames. **Power-on default**. Parameter read/write and all control modes (operation / PP position / CSP position / velocity / current) | **Implemented** |
+| CANopen | Ch. 5 "Explanation of Canopen Communication Protocol Types" | Standard higher-layer protocol (OSI layer 7) using 11-bit CAN IDs. EDS files available from the vendor | Not implemented |
+| MIT Protocol | Ch. 6 "MIT Communication Protocol Description" | Open motor-control protocol derived from MIT Mini Cheetah; used by projects such as OpenArm | Not implemented |
+
+This driver implements the **private protocol only** (the sections below describe it).
+
+### Why only the private protocol
+
+- It is the power-on default — no protocol-switch frame or power cycle needed.
+- It covers parameter read/write and every control mode; nothing essential is
+  missing for typical robot integration.
+- The official ROS samples also use the private protocol over SocketCAN.
+
+Switching to CANopen or MIT may become necessary later (e.g. mixing with
+CANopen devices or reusing MIT-protocol software), but for initial Linux
+integration and feasibility work the private protocol is sufficient.
 
 ## Physical layer
 
