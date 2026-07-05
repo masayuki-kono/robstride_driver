@@ -23,18 +23,18 @@ namespace at_serial {
 
 namespace {
 
-constexpr std::size_t kHeaderSize = 7;  // "AT" + 4-byte id + dlc
-constexpr std::size_t kTailSize = 2;    // "\r\n"
+constexpr std::size_t header_size = 7;  // "AT" + 4-byte id + dlc
+constexpr std::size_t tail_size = 2;    // "\r\n"
 
 }  // namespace
 
-std::vector<std::uint8_t> EncodeFrame(const CanFrame& frame) {
+std::vector<std::uint8_t> encode_frame(const CanFrame& frame) {
   // Bit2 of the packed identifier marks an extended data frame; see the
   // worked example in the RS02 User Manual (3.3.5).
   const std::uint32_t packed = ((frame.id & 0x1FFFFFFFU) << 3) | 0x4U;
 
   std::vector<std::uint8_t> out;
-  out.reserve(kHeaderSize + frame.dlc + kTailSize);
+  out.reserve(header_size + frame.dlc + tail_size);
   out.push_back('A');
   out.push_back('T');
   out.push_back(static_cast<std::uint8_t>(packed >> 24));
@@ -48,12 +48,12 @@ std::vector<std::uint8_t> EncodeFrame(const CanFrame& frame) {
   return out;
 }
 
-void FrameParser::Push(const std::uint8_t* data, std::size_t size) {
+void FrameParser::push(const std::uint8_t* data, std::size_t size) {
   buffer_.insert(buffer_.end(), data, data + size);
 }
 
-std::optional<CanFrame> FrameParser::Poll() {
-  while (buffer_.size() >= kHeaderSize + kTailSize) {
+std::optional<CanFrame> FrameParser::poll() {
+  while (buffer_.size() >= header_size + tail_size) {
     if (buffer_[0] != 'A' || buffer_[1] != 'T') {
       buffer_.erase(buffer_.begin());
       continue;
@@ -63,7 +63,7 @@ std::optional<CanFrame> FrameParser::Poll() {
       buffer_.erase(buffer_.begin());
       continue;
     }
-    const std::size_t total = kHeaderSize + dlc + kTailSize;
+    const std::size_t total = header_size + dlc + tail_size;
     if (buffer_.size() < total) {
       return std::nullopt;  // wait for more bytes
     }
@@ -80,7 +80,7 @@ std::optional<CanFrame> FrameParser::Poll() {
     CanFrame frame;
     frame.id = (packed >> 3) & 0x1FFFFFFFU;
     frame.dlc = dlc;
-    std::memcpy(frame.data.data(), buffer_.data() + kHeaderSize, dlc);
+    std::memcpy(frame.data.data(), buffer_.data() + header_size, dlc);
     buffer_.erase(buffer_.begin(),
                   buffer_.begin() + static_cast<std::ptrdiff_t>(total));
     return frame;
@@ -92,7 +92,7 @@ std::optional<CanFrame> FrameParser::Poll() {
 
 namespace {
 
-[[noreturn]] void ThrowErrno(const std::string& what) {
+[[noreturn]] void throw_errno(const std::string& what) {
   throw std::system_error(errno, std::generic_category(), what);
 }
 
@@ -103,14 +103,14 @@ AtSerialCanInterface::AtSerialCanInterface(const std::string& device,
     : device_(device) {
   fd_ = ::open(device.c_str(), O_RDWR | O_NOCTTY | O_CLOEXEC);
   if (fd_ < 0) {
-    ThrowErrno("robstride: failed to open serial device '" + device + "'");
+    throw_errno("robstride: failed to open serial device '" + device + "'");
   }
 
   struct termios2 tio {};
   if (::ioctl(fd_, TCGETS2, &tio) < 0) {
     ::close(fd_);
     fd_ = -1;
-    ThrowErrno("robstride: TCGETS2 failed on '" + device + "'");
+    throw_errno("robstride: TCGETS2 failed on '" + device + "'");
   }
   tio.c_iflag = 0;
   tio.c_oflag = 0;
@@ -123,7 +123,7 @@ AtSerialCanInterface::AtSerialCanInterface(const std::string& device,
   if (::ioctl(fd_, TCSETS2, &tio) < 0) {
     ::close(fd_);
     fd_ = -1;
-    ThrowErrno("robstride: TCSETS2 failed on '" + device + "'");
+    throw_errno("robstride: TCSETS2 failed on '" + device + "'");
   }
   ::ioctl(fd_, TCFLSH, TCIOFLUSH);  // drop stale bytes from previous sessions
 }
@@ -134,8 +134,8 @@ AtSerialCanInterface::~AtSerialCanInterface() {
   }
 }
 
-void AtSerialCanInterface::Send(const CanFrame& frame) {
-  const auto packet = at_serial::EncodeFrame(frame);
+void AtSerialCanInterface::send(const CanFrame& frame) {
+  const auto packet = at_serial::encode_frame(frame);
   std::size_t sent = 0;
   while (sent < packet.size()) {
     const ssize_t written =
@@ -144,17 +144,17 @@ void AtSerialCanInterface::Send(const CanFrame& frame) {
       if (errno == EINTR) {
         continue;
       }
-      ThrowErrno("robstride: failed to write to '" + device_ + "'");
+      throw_errno("robstride: failed to write to '" + device_ + "'");
     }
     sent += static_cast<std::size_t>(written);
   }
 }
 
-std::optional<CanFrame> AtSerialCanInterface::Receive(
+std::optional<CanFrame> AtSerialCanInterface::receive(
     std::chrono::milliseconds timeout) {
   const auto deadline = std::chrono::steady_clock::now() + timeout;
   while (true) {
-    if (auto frame = parser_.Poll()) {
+    if (auto frame = parser_.poll()) {
       return frame;
     }
 
@@ -177,7 +177,7 @@ std::optional<CanFrame> AtSerialCanInterface::Receive(
       if (errno == EINTR) {
         continue;
       }
-      ThrowErrno("robstride: select() failed on '" + device_ + "'");
+      throw_errno("robstride: select() failed on '" + device_ + "'");
     }
     if (ready == 0) {
       return std::nullopt;  // timeout
@@ -189,10 +189,10 @@ std::optional<CanFrame> AtSerialCanInterface::Receive(
       if (errno == EINTR) {
         continue;
       }
-      ThrowErrno("robstride: failed to read from '" + device_ + "'");
+      throw_errno("robstride: failed to read from '" + device_ + "'");
     }
     if (received > 0) {
-      parser_.Push(chunk.data(), static_cast<std::size_t>(received));
+      parser_.push(chunk.data(), static_cast<std::size_t>(received));
     }
   }
 }

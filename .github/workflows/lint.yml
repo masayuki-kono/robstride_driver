@@ -22,7 +22,7 @@ jobs:
         run: >
           clang-format --dry-run --Werror
           src/*.cpp include/robstride_driver/*.hpp tests/*.cpp
-          examples/*.cpp examples/*.hpp
+          tests/fixtures/*.hpp examples/*.cpp examples/*.hpp
 
   clang-tidy:
     runs-on: ubuntu-24.04

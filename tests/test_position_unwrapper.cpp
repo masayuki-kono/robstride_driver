@@ -5,62 +5,61 @@
 
 #include <gtest/gtest.h>
 
-#include <cmath>
-#include <numbers>
-
 #include "robstride_driver/position_unwrapper.hpp"
 
 namespace robstride {
 namespace {
 
-constexpr double kPi = std::numbers::pi;
-constexpr double kSpan = 8.0 * kPi;  // RS02: +-4 pi
+const ActuatorLimits& Rs02() { return get_actuator_limits(ActuatorType::Rs02); }
+
+/// Total width of the wrapped encoding range (RS02: 8 pi).
+double WrapSpan() { return 2.0 * Rs02().position; }
 
 TEST(PositionUnwrapper, FirstSamplePassesThrough) {
-  PositionUnwrapper unwrapper(kSpan);
+  PositionUnwrapper unwrapper(WrapSpan());
   EXPECT_FALSE(unwrapper.position().has_value());
-  EXPECT_DOUBLE_EQ(unwrapper.Update(1.5), 1.5);
+  EXPECT_DOUBLE_EQ(unwrapper.update(1.5), 1.5);
   EXPECT_DOUBLE_EQ(unwrapper.position().value(), 1.5);
 }
 
 TEST(PositionUnwrapper, SmallDeltasUnchanged) {
-  PositionUnwrapper unwrapper(kSpan);
-  unwrapper.Update(0.0);
-  EXPECT_DOUBLE_EQ(unwrapper.Update(1.0), 1.0);
-  EXPECT_DOUBLE_EQ(unwrapper.Update(-2.0), -2.0);
+  PositionUnwrapper unwrapper(WrapSpan());
+  unwrapper.update(0.0);
+  EXPECT_DOUBLE_EQ(unwrapper.update(1.0), 1.0);
+  EXPECT_DOUBLE_EQ(unwrapper.update(-2.0), -2.0);
 }
 
 TEST(PositionUnwrapper, PositiveWrap) {
-  PositionUnwrapper unwrapper(kSpan);
+  PositionUnwrapper unwrapper(WrapSpan());
   // Rotating forward: raw jumps from just below +4 pi to just above -4 pi.
-  unwrapper.Update((4.0 * kPi) - 0.1);
-  const double continuous = unwrapper.Update((-4.0 * kPi) + 0.1);
-  EXPECT_NEAR(continuous, (4.0 * kPi) + 0.1, 1e-9);
+  unwrapper.update(Rs02().position - 0.1);
+  const double continuous = unwrapper.update(-Rs02().position + 0.1);
+  EXPECT_NEAR(continuous, Rs02().position + 0.1, 1e-9);
 }
 
 TEST(PositionUnwrapper, NegativeWrap) {
-  PositionUnwrapper unwrapper(kSpan);
+  PositionUnwrapper unwrapper(WrapSpan());
   // Rotating backward: raw jumps from just above -4 pi to just below +4 pi.
-  unwrapper.Update((-4.0 * kPi) + 0.1);
-  const double continuous = unwrapper.Update((4.0 * kPi) - 0.1);
-  EXPECT_NEAR(continuous, -(4.0 * kPi) - 0.1, 1e-9);
+  unwrapper.update(-Rs02().position + 0.1);
+  const double continuous = unwrapper.update(Rs02().position - 0.1);
+  EXPECT_NEAR(continuous, -Rs02().position - 0.1, 1e-9);
 }
 
 TEST(PositionUnwrapper, MultipleRevolutionsAccumulate) {
-  PositionUnwrapper unwrapper(kSpan);
+  PositionUnwrapper unwrapper(WrapSpan());
   // Simulate constant forward rotation at 2 rad per sample for 3 full
   // wrap cycles and check the output stays continuous and monotonic.
   double raw = 0.0;
-  double previous = unwrapper.Update(raw);
+  double previous = unwrapper.update(raw);
   double travelled = 0.0;
   const double step = 2.0;
-  const int steps = static_cast<int>(3.0 * kSpan / step);
+  const int steps = static_cast<int>(3.0 * WrapSpan() / step);
   for (int i = 0; i < steps; ++i) {
     raw += step;
-    if (raw > 4.0 * kPi) {
-      raw -= kSpan;
+    if (raw > Rs02().position) {
+      raw -= WrapSpan();
     }
-    const double continuous = unwrapper.Update(raw);
+    const double continuous = unwrapper.update(raw);
     EXPECT_NEAR(continuous - previous, step, 1e-9);
     previous = continuous;
     travelled += step;
@@ -69,20 +68,19 @@ TEST(PositionUnwrapper, MultipleRevolutionsAccumulate) {
 }
 
 TEST(PositionUnwrapper, ResetForgetsOffset) {
-  PositionUnwrapper unwrapper(kSpan);
-  unwrapper.Update((4.0 * kPi) - 0.1);
-  unwrapper.Update((-4.0 * kPi) + 0.1);  // wrapped once
-  unwrapper.Reset();
+  PositionUnwrapper unwrapper(WrapSpan());
+  unwrapper.update(Rs02().position - 0.1);
+  unwrapper.update(-Rs02().position + 0.1);  // wrapped once
+  unwrapper.reset();
   EXPECT_FALSE(unwrapper.position().has_value());
-  EXPECT_DOUBLE_EQ(unwrapper.Update(1.0), 1.0);
+  EXPECT_DOUBLE_EQ(unwrapper.update(1.0), 1.0);
 }
 
 TEST(PositionUnwrapper, LimitsConstructorUsesSymmetricRange) {
-  const ActuatorLimits& limits = GetActuatorLimits(ActuatorType::kRs02);
-  PositionUnwrapper unwrapper(limits);
-  unwrapper.Update(limits.position - 0.1);
-  const double continuous = unwrapper.Update(-limits.position + 0.1);
-  EXPECT_NEAR(continuous, limits.position + 0.1, 1e-9);
+  PositionUnwrapper unwrapper(Rs02());
+  unwrapper.update(Rs02().position - 0.1);
+  const double continuous = unwrapper.update(-Rs02().position + 0.1);
+  EXPECT_NEAR(continuous, Rs02().position + 0.1, 1e-9);
 }
 
 }  // namespace

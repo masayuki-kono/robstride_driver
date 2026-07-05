@@ -30,7 +30,7 @@ are made continuous with `PositionUnwrapper`.
 
 ## Velocity mode
 
-Step profile 0 → +2 → +4 → −2 → 0 rad/s (via `SendVelocityCommand`, current
+Step profile 0 → +2 → +4 → −2 → 0 rad/s (via `send_velocity_command`, current
 limit 10 A, acceleration 20 rad/s²):
 
 ![Velocity mode tracking](images/velocity_tracking.png)
@@ -52,9 +52,9 @@ Steady-state statistics per plateau (transients of 1.5 s excluded):
 
 ## CSP position mode
 
-Step profile 0 → +π → −π → 0 rad (via `SendPositionCspCommand` semantics:
+Step profile 0 → +π → −π → 0 rad (via `send_position_csp_command` semantics:
 `limit_spd` = 4 rad/s, then `loc_ref` steps). The motor was zeroed with
-`SetMechanicalZero()` before the run:
+`set_mechanical_zero()` before the run:
 
 ![CSP position mode tracking](images/position_tracking.png)
 
@@ -74,7 +74,7 @@ Steady-state statistics per plateau (transients of 2 s excluded):
 
 Same step profile 0 → +π → −π → 0 rad, executed in profile-position mode
 (run_mode 1, `vel_max` = 4 rad/s, `acc_set` = 20 rad/s², then `loc_ref`
-steps). The motor was zeroed with `SetMechanicalZero()` before the run:
+steps). The motor was zeroed with `set_mechanical_zero()` before the run:
 
 ![PP position mode tracking](images/pp_tracking.png)
 
@@ -123,7 +123,7 @@ Steady-state statistics per plateau (transients of 0.5 s excluded):
 Step profile 0 → +π/2 → −π/2 → 0 rad as position targets of the motion
 command (communication type 1), with Kp = 4, Kd = 1, zero velocity target
 and zero torque feed-forward. The motor was zeroed with
-`SetMechanicalZero()` before the run:
+`set_mechanical_zero()` before the run:
 
 ![Operation control tracking](images/operation_tracking.png)
 
@@ -208,5 +208,5 @@ python3 tools/plot_tracking.py operation operation_tracking_kp30.csv docs/images
 ```
 
 Note: the position-based captures (position, pp, operation) set the current
-position as mechanical zero (`SetMechanicalZero()`) so the recorded
+position as mechanical zero (`set_mechanical_zero()`) so the recorded
 positions are relative to the start.

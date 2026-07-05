@@ -36,7 +36,16 @@ struct Segment {
 };
 
 /// Command / feedback period (100 Hz).
-inline constexpr double kSamplePeriodS = 0.01;
+inline constexpr double sample_period_s = 0.01;
+
+/// Default bench parameters for the tracking_capture_* examples.
+namespace bench {
+inline constexpr double current_limit_a = 10.0;
+inline constexpr double acceleration_rad = 20.0;  ///< [rad/s^2]
+inline constexpr double pp_vel_max = 4.0;   ///< [rad/s] (PP position mode)
+inline constexpr double pp_acc_set = 20.0;  ///< [rad/s^2] (PP position mode)
+inline constexpr double csp_speed_limit = 4.0;  ///< [rad/s] (CSP position mode)
+}  // namespace bench
 
 /// Command-line arguments shared by every capture example.
 struct Args {
@@ -45,7 +54,7 @@ struct Args {
   std::string out_path;
 };
 
-inline double SecondsSince(const Clock::time_point& start) {
+inline double seconds_since(const Clock::time_point& start) {
   return std::chrono::duration<double>(Clock::now() - start).count();
 }
 
@@ -53,8 +62,8 @@ inline double SecondsSince(const Clock::time_point& start) {
 /// (argv[1..3]). Prints a usage message and returns nullopt when they are
 /// missing. `extra_usage` documents additional, example-specific
 /// arguments (e.g. " [kp] [kd]").
-inline std::optional<Args> ParseArgs(int argc, char** argv,
-                                     const char* extra_usage = "") {
+inline std::optional<Args> parse_args(int argc, char** argv,
+                                      const char* extra_usage = "") {
   if (argc < 4) {
     std::cerr << "usage: " << argv[0] << " <interface> <motor-id> <out.csv>"
               << extra_usage << '\n'
@@ -77,33 +86,33 @@ inline std::optional<Args> ParseArgs(int argc, char** argv,
 
 /// Opens the transport: the AT-serial USB-CAN module for /dev/... paths,
 /// SocketCAN otherwise.
-inline std::shared_ptr<robstride::CanInterface> MakeCanInterface(
+inline std::shared_ptr<robstride::CanInterface> make_can_interface(
     const std::string& interface_name, std::uint8_t motor_id) {
   if (interface_name.starts_with("/dev/")) {
     return std::make_shared<robstride::AtSerialCanInterface>(interface_name);
   }
   auto socket_can =
       std::make_shared<robstride::SocketCanInterface>(interface_name);
-  socket_can->SetMotorIdFilter(motor_id);
+  socket_can->set_motor_id_filter(motor_id);
   return socket_can;
 }
 
 /// Creates a RobstrideMotor for an RS02 with the default host id and
 /// response timeout.
-inline robstride::RobstrideMotor MakeRs02Motor(
+inline robstride::RobstrideMotor make_rs02_motor(
     const std::shared_ptr<robstride::CanInterface>& can,
     std::uint8_t motor_id) {
   robstride::RobstrideMotor::Config config;
   config.motor_id = motor_id;
-  config.actuator_type = robstride::ActuatorType::kRs02;
+  config.actuator_type = robstride::ActuatorType::Rs02;
   return robstride::RobstrideMotor{can, config};
 }
 
 /// Opens the output CSV and writes the header row. `extra_header` appends
 /// example-specific columns (e.g. ",iq"). Prints an error message when
 /// the file cannot be opened; check the returned stream.
-inline std::ofstream OpenCsv(const std::string& out_path,
-                             const char* extra_header = "") {
+inline std::ofstream open_csv(const std::string& out_path,
+                              const char* extra_header = "") {
   std::ofstream csv(out_path);
   if (csv) {
     csv << "t,target,position,velocity,torque,temperature" << extra_header
@@ -119,19 +128,19 @@ inline std::ofstream OpenCsv(const std::string& out_path,
 /// and appends a CSV row. `append_extra(csv)` is called after the
 /// standard columns so an example can append its extra columns.
 template <typename SendCommand, typename AppendExtra>
-void RunProfile(const std::vector<Segment>& profile,
-                robstride::PositionUnwrapper& unwrapper, std::ofstream& csv,
-                SendCommand&& send_command, AppendExtra&& append_extra) {
+void run_profile(const std::vector<Segment>& profile,
+                 robstride::PositionUnwrapper& unwrapper, std::ofstream& csv,
+                 SendCommand&& send_command, AppendExtra&& append_extra) {
   const auto start = Clock::now();
   for (const auto& segment : profile) {
-    const double segment_end = SecondsSince(start) + segment.duration_s;
-    while (SecondsSince(start) < segment_end) {
+    const double segment_end = seconds_since(start) + segment.duration_s;
+    while (seconds_since(start) < segment_end) {
       const auto cycle_end =
           Clock::now() + std::chrono::duration_cast<Clock::duration>(
-                             std::chrono::duration<double>(kSamplePeriodS));
+                             std::chrono::duration<double>(sample_period_s));
       const robstride::Feedback feedback = send_command(segment.target);
-      csv << SecondsSince(start) << ',' << segment.target << ','
-          << unwrapper.Update(feedback.position) << ',' << feedback.velocity
+      csv << seconds_since(start) << ',' << segment.target << ','
+          << unwrapper.update(feedback.position) << ',' << feedback.velocity
           << ',' << feedback.torque << ',' << feedback.temperature;
       append_extra(csv);
       csv << '\n';
@@ -142,11 +151,11 @@ void RunProfile(const std::vector<Segment>& profile,
 
 /// RunProfile without extra CSV columns.
 template <typename SendCommand>
-void RunProfile(const std::vector<Segment>& profile,
-                robstride::PositionUnwrapper& unwrapper, std::ofstream& csv,
-                SendCommand&& send_command) {
-  RunProfile(profile, unwrapper, csv, std::forward<SendCommand>(send_command),
-             [](std::ofstream&) {});
+void run_profile(const std::vector<Segment>& profile,
+                 robstride::PositionUnwrapper& unwrapper, std::ofstream& csv,
+                 SendCommand&& send_command) {
+  run_profile(profile, unwrapper, csv, std::forward<SendCommand>(send_command),
+              [](std::ofstream&) {});
 }
 
 }  // namespace tracking_capture

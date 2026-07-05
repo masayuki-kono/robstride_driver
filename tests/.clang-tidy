@@ -3,4 +3,5 @@ InheritParentConfig: true
 # GoogleTest assertions (ASSERT_TRUE(x.has_value())) are not visible to the
 # optional-access analysis, so this check is all false positives in tests.
 Checks: >
-  -bugprone-unchecked-optional-access
+  -bugprone-unchecked-optional-access,
+  -readability-identifier-naming

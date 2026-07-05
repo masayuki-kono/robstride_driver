@@ -20,37 +20,37 @@
 #include "tracking_capture_common.hpp"
 
 int main(int argc, char** argv) {
-  const auto args = tracking_capture::ParseArgs(argc, argv);
+  const auto args = tracking_capture::parse_args(argc, argv);
   if (!args) {
     return EXIT_FAILURE;
   }
 
   const std::vector<tracking_capture::Segment> profile = {
       {1.0, 0.0}, {4.0, 2.0}, {4.0, 4.0}, {4.0, -2.0}, {3.0, 0.0}};
-  constexpr double kCurrentLimitA = 10.0;
-  constexpr double kAccelerationRad = 20.0;  // [rad/s^2]
 
   try {
-    auto can = tracking_capture::MakeCanInterface(args->interface_name,
-                                                  args->motor_id);
-    auto motor = tracking_capture::MakeRs02Motor(can, args->motor_id);
+    auto can = tracking_capture::make_can_interface(args->interface_name,
+                                                    args->motor_id);
+    auto motor = tracking_capture::make_rs02_motor(can, args->motor_id);
     robstride::PositionUnwrapper unwrapper(motor.limits());
 
-    std::ofstream csv = tracking_capture::OpenCsv(args->out_path);
+    std::ofstream csv = tracking_capture::open_csv(args->out_path);
     if (!csv) {
       return EXIT_FAILURE;
     }
 
-    motor.SetRunMode(robstride::RunMode::kVelocity);
-    motor.Enable();
-    motor.ConfigureVelocityMode(kCurrentLimitA, kAccelerationRad);
+    motor.set_run_mode(robstride::RunMode::Velocity);
+    motor.enable();
+    motor.configure_velocity_mode(tracking_capture::bench::current_limit_a,
+                                  tracking_capture::bench::acceleration_rad);
 
-    tracking_capture::RunProfile(
-        profile, unwrapper, csv,
-        [&motor](double target) { return motor.SendVelocityCommand(target); });
+    tracking_capture::run_profile(profile, unwrapper, csv,
+                                  [&motor](double target) {
+                                    return motor.send_velocity_command(target);
+                                  });
 
-    motor.SendVelocityCommand(0.0);
-    motor.Disable();
+    motor.send_velocity_command(0.0);
+    motor.disable();
     std::cout << "wrote " << args->out_path << '\n';
   } catch (const std::exception& error) {
     std::cerr << "error: " << error.what() << '\n';

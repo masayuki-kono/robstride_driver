@@ -39,7 +39,7 @@ class RobstrideMotor {
     /// CAN id representing this host in command frames.
     std::uint8_t host_id = 0xFD;
     /// Motor model; selects the fixed-point scaling ranges.
-    ActuatorType actuator_type = ActuatorType::kRs02;
+    ActuatorType actuator_type = ActuatorType::Rs02;
     /// Max time to wait for a response frame per command.
     std::chrono::milliseconds response_timeout{100};
   };
@@ -47,56 +47,56 @@ class RobstrideMotor {
   RobstrideMotor(std::shared_ptr<CanInterface> can, const Config& config);
 
   /// Enables the motor (communication type 3).
-  Feedback Enable();
+  Feedback enable();
 
   /// Stops the motor (communication type 4). Set `clear_fault` to also
   /// clear a latched fault.
-  Feedback Disable(bool clear_fault = false);
+  Feedback disable(bool clear_fault = false);
 
   /// Switches run_mode (parameter 0x7005). Per the vendor manual the motor
   /// must not be running while the mode changes, so this stops the motor,
   /// writes the mode, and reads it back to verify. The motor is left
-  /// disabled; call Enable() afterwards.
-  void SetRunMode(RunMode mode);
+  /// disabled; call enable() afterwards.
+  void set_run_mode(RunMode mode);
 
   /// Reads run_mode (parameter 0x7005) from the motor.
-  RunMode GetRunMode();
+  RunMode get_run_mode();
 
   /// Writes the current limit (0x7018 [A]) and acceleration (0x7022
   /// [rad/s^2]) used by velocity mode.
-  void ConfigureVelocityMode(double current_limit, double acceleration);
+  void configure_velocity_mode(double current_limit, double acceleration);
 
   /// Sends a velocity-mode target (0x700A [rad/s]). Requires
-  /// RunMode::kVelocity and an enabled motor. Returns the feedback frame
+  /// RunMode::Velocity and an enabled motor. Returns the feedback frame
   /// answered by the motor.
-  Feedback SendVelocityCommand(double velocity);
+  Feedback send_velocity_command(double velocity);
 
   /// Sends a CSP position-mode target: speed limit (0x7017 [rad/s]) then
-  /// target angle (0x7016 [rad]). Requires RunMode::kPositionCsp and an
+  /// target angle (0x7016 [rad]). Requires RunMode::PositionCsp and an
   /// enabled motor.
-  Feedback SendPositionCspCommand(double position, double speed_limit);
+  Feedback send_position_csp_command(double position, double speed_limit);
 
   /// Sends an operation-control (MIT) command (communication type 1).
-  /// Requires RunMode::kOperationControl and an enabled motor.
-  Feedback SendMotionCommand(double torque, double position, double velocity,
-                             double kp, double kd);
+  /// Requires RunMode::OperationControl and an enabled motor.
+  Feedback send_motion_command(double torque, double position, double velocity,
+                               double kp, double kd);
 
   /// Sets the current position as mechanical zero (communication type 6).
   /// The motor must be disabled; this stops it first and leaves it
   /// disabled.
-  void SetMechanicalZero();
+  void set_mechanical_zero();
 
   /// Reads a float parameter (communication type 17).
-  float ReadParamFloat(std::uint16_t index);
+  float read_param_float(std::uint16_t index);
 
   /// Reads a uint8 parameter (communication type 17).
-  std::uint8_t ReadParamUint8(std::uint16_t index);
+  std::uint8_t read_param_uint8(std::uint16_t index);
 
   /// Writes a float parameter (communication type 18).
-  Feedback WriteParam(std::uint16_t index, float value);
+  Feedback write_param(std::uint16_t index, float value);
 
   /// Writes a uint8 parameter (communication type 18).
-  Feedback WriteParam(std::uint16_t index, std::uint8_t value);
+  Feedback write_param(std::uint16_t index, std::uint8_t value);
 
   /// Latest feedback received from the motor, if any.
   [[nodiscard]] const std::optional<Feedback>& last_feedback() const {
@@ -113,10 +113,10 @@ class RobstrideMotor {
   /// Sends `frame` and waits for a response with communication type
   /// `expected_type` from this motor. Feedback frames encountered along
   /// the way update last_feedback_. Throws TimeoutError on timeout.
-  CanFrame Transceive(const CanFrame& frame, CommType expected_type);
+  CanFrame transceive(const CanFrame& frame, CommType expected_type);
 
   /// Sends `frame` and waits for the feedback response, returning it.
-  Feedback TransceiveFeedback(const CanFrame& frame);
+  Feedback transceive_feedback(const CanFrame& frame);
 
   /// Transport shared with other motors on the same bus.
   std::shared_ptr<CanInterface> can_;

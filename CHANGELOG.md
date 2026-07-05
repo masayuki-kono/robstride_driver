@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-07-05
+
+### Changed
+
+- **Breaking:** Renamed the public API to follow C++ Core Guidelines naming:
+  - Constants: `snake_case` (e.g. `param_index::run_mode`)
+  - Methods and free functions: `snake_case` (e.g. `set_run_mode()`, `get_actuator_limits()`)
+  - enum values: PascalCase without `k` prefix (e.g. `RunMode::Velocity`, `ActuatorType::Rs02`)
+- Updated `.clang-tidy` to enforce the new naming rules via
+  `readability-identifier-naming`.
+- Updated `AGENTS.md` to document layout vs naming responsibilities.
+
 ## [0.1.0] - 2026-07-05
 
 Initial release.
@@ -39,5 +51,6 @@ Initial release.
 - CI (gcc/clang build + tests), lint workflow (clang-format, clang-tidy,
   ruff) and pre-commit configuration.
 
-[Unreleased]: https://github.com/masayuki-kono/robstride_driver/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/masayuki-kono/robstride_driver/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/masayuki-kono/robstride_driver/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/masayuki-kono/robstride_driver/releases/tag/v0.1.0

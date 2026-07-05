@@ -7,6 +7,9 @@ add_executable(robstride_driver_tests
   test_robstride_motor.cpp
   test_stub_can_interface.cpp
 )
+target_include_directories(robstride_driver_tests PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}
+)
 target_link_libraries(robstride_driver_tests
   robstride_driver::robstride_driver
   GTest::gtest

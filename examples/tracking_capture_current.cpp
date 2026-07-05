@@ -21,7 +21,7 @@
 #include "tracking_capture_common.hpp"
 
 int main(int argc, char** argv) {
-  const auto args = tracking_capture::ParseArgs(argc, argv);
+  const auto args = tracking_capture::parse_args(argc, argv);
   if (!args) {
     return EXIT_FAILURE;
   }
@@ -30,32 +30,32 @@ int main(int argc, char** argv) {
       {1.0, 0.0}, {1.5, 0.3}, {1.5, -0.3}, {1.5, 0.3}, {1.5, -0.3}, {1.0, 0.0}};
 
   try {
-    auto can = tracking_capture::MakeCanInterface(args->interface_name,
-                                                  args->motor_id);
-    auto motor = tracking_capture::MakeRs02Motor(can, args->motor_id);
+    auto can = tracking_capture::make_can_interface(args->interface_name,
+                                                    args->motor_id);
+    auto motor = tracking_capture::make_rs02_motor(can, args->motor_id);
     robstride::PositionUnwrapper unwrapper(motor.limits());
 
-    std::ofstream csv = tracking_capture::OpenCsv(args->out_path, ",iq");
+    std::ofstream csv = tracking_capture::open_csv(args->out_path, ",iq");
     if (!csv) {
       return EXIT_FAILURE;
     }
 
-    motor.SetRunMode(robstride::RunMode::kCurrent);
-    motor.Enable();
+    motor.set_run_mode(robstride::RunMode::Current);
+    motor.enable();
 
-    tracking_capture::RunProfile(
+    tracking_capture::run_profile(
         profile, unwrapper, csv,
         [&motor](double target) {
-          return motor.WriteParam(robstride::param_index::kIqRef,
-                                  static_cast<float>(target));
+          return motor.write_param(robstride::param_index::iq_ref,
+                                   static_cast<float>(target));
         },
         [&motor](std::ofstream& row) {
           row << ','
-              << motor.ReadParamFloat(robstride::param_index::kIqFiltered);
+              << motor.read_param_float(robstride::param_index::iq_filtered);
         });
 
-    motor.WriteParam(robstride::param_index::kIqRef, 0.0F);
-    motor.Disable();
+    motor.write_param(robstride::param_index::iq_ref, 0.0F);
+    motor.disable();
     std::cout << "wrote " << args->out_path << '\n';
   } catch (const std::exception& error) {
     std::cerr << "error: " << error.what() << '\n';

@@ -38,16 +38,16 @@ class StubCanInterface : public CanInterface {
   /// Creates a stub bus. `actuator_type` selects the fixed-point scaling
   /// used to encode feedback frames; it must match the type configured in
   /// the `RobstrideMotor` instances using this interface.
-  explicit StubCanInterface(ActuatorType actuator_type = ActuatorType::kRs02);
+  explicit StubCanInterface(ActuatorType actuator_type = ActuatorType::Rs02);
 
   /// Decodes the command frame, updates the simulated motor state, and
   /// queues the response frame(s) for `Receive`. Unsupported communication
   /// types are ignored (the caller then observes a response timeout).
-  void Send(const CanFrame& frame) override;
+  void send(const CanFrame& frame) override;
 
   /// Returns the next queued response, or nullopt immediately when no
   /// response is pending (simulating a response timeout without waiting).
-  std::optional<CanFrame> Receive(std::chrono::milliseconds timeout) override;
+  std::optional<CanFrame> receive(std::chrono::milliseconds timeout) override;
 
   /// Sets the temperature [Celsius] reported in the feedback frames of
   /// every simulated motor (default 30.0).
@@ -70,15 +70,15 @@ class StubCanInterface : public CanInterface {
   };
 
   /// Returns the state of `motor_id`, creating it on first use.
-  MotorState& Motor(std::uint8_t motor_id);
+  MotorState& motor(std::uint8_t motor_id);
 
   /// Advances the motion simulation of `state` up to `now`.
-  static void Advance(MotorState& state,
+  static void advance(MotorState& state,
                       std::chrono::steady_clock::time_point now);
 
   /// Queues the feedback frame reflecting the current state of `state`.
-  void QueueFeedback(std::uint8_t motor_id, std::uint8_t host_id,
-                     const MotorState& state);
+  void queue_feedback(std::uint8_t motor_id, std::uint8_t host_id,
+                      const MotorState& state);
 
   /// Fixed-point scaling ranges used to encode feedback frames.
   const ActuatorLimits& limits_;

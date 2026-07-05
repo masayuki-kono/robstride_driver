@@ -22,44 +22,42 @@
 #include "tracking_capture_common.hpp"
 
 int main(int argc, char** argv) {
-  const auto args = tracking_capture::ParseArgs(argc, argv);
+  const auto args = tracking_capture::parse_args(argc, argv);
   if (!args) {
     return EXIT_FAILURE;
   }
 
-  constexpr double kPi = std::numbers::pi;
+  constexpr double pi = std::numbers::pi;
   const std::vector<tracking_capture::Segment> profile = {
-      {1.0, 0.0}, {4.0, kPi}, {4.0, -kPi}, {4.0, 0.0}};
-  constexpr double kVelMax = 4.0;   // [rad/s]
-  constexpr double kAccSet = 20.0;  // [rad/s^2]
+      {1.0, 0.0}, {4.0, pi}, {4.0, -pi}, {4.0, 0.0}};
 
   try {
-    auto can = tracking_capture::MakeCanInterface(args->interface_name,
-                                                  args->motor_id);
-    auto motor = tracking_capture::MakeRs02Motor(can, args->motor_id);
+    auto can = tracking_capture::make_can_interface(args->interface_name,
+                                                    args->motor_id);
+    auto motor = tracking_capture::make_rs02_motor(can, args->motor_id);
     robstride::PositionUnwrapper unwrapper(motor.limits());
 
-    std::ofstream csv = tracking_capture::OpenCsv(args->out_path);
+    std::ofstream csv = tracking_capture::open_csv(args->out_path);
     if (!csv) {
       return EXIT_FAILURE;
     }
 
-    motor.SetRunMode(robstride::RunMode::kPositionPp);
+    motor.set_run_mode(robstride::RunMode::PositionPp);
     // Zero here so the recorded positions are relative to the start.
-    motor.SetMechanicalZero();
-    motor.Enable();
-    motor.WriteParam(robstride::param_index::kVelMax,
-                     static_cast<float>(kVelMax));
-    motor.WriteParam(robstride::param_index::kAccSet,
-                     static_cast<float>(kAccSet));
+    motor.set_mechanical_zero();
+    motor.enable();
+    motor.write_param(robstride::param_index::vel_max,
+                      static_cast<float>(tracking_capture::bench::pp_vel_max));
+    motor.write_param(robstride::param_index::acc_set,
+                      static_cast<float>(tracking_capture::bench::pp_acc_set));
 
-    tracking_capture::RunProfile(
+    tracking_capture::run_profile(
         profile, unwrapper, csv, [&motor](double target) {
-          return motor.WriteParam(robstride::param_index::kLocRef,
-                                  static_cast<float>(target));
+          return motor.write_param(robstride::param_index::loc_ref,
+                                   static_cast<float>(target));
         });
 
-    motor.Disable();
+    motor.disable();
     std::cout << "wrote " << args->out_path << '\n';
   } catch (const std::exception& error) {
     std::cerr << "error: " << error.what() << '\n';

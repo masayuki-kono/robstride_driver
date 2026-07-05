@@ -8,23 +8,23 @@
 #include <memory>
 #include <vector>
 
+#include "fixtures/can_bus.hpp"
 #include "robstride_driver/robstride_motor.hpp"
 
 namespace robstride {
 namespace {
 
-constexpr std::uint8_t kMotorId = 0x01;
-constexpr std::uint8_t kHostId = 0xFD;
+namespace bus = test_fixtures::can_bus::single;
 
-const ActuatorLimits& Rs02() { return GetActuatorLimits(ActuatorType::kRs02); }
+const ActuatorLimits& Rs02() { return get_actuator_limits(ActuatorType::Rs02); }
 
 /// Scripted CAN interface: records sent frames and plays back queued
 /// responses.
 class MockCanInterface : public CanInterface {
  public:
-  void Send(const CanFrame& frame) override { sent.push_back(frame); }
+  void send(const CanFrame& frame) override { sent.push_back(frame); }
 
-  std::optional<CanFrame> Receive(
+  std::optional<CanFrame> receive(
       std::chrono::milliseconds /*timeout*/) override {
     if (responses.empty()) {
       return std::nullopt;
@@ -40,19 +40,19 @@ class MockCanInterface : public CanInterface {
 
 CanFrame FeedbackFrame(std::uint8_t motor_id, double position, double velocity,
                        double torque, double temperature,
-                       MotorMode mode = MotorMode::kRun,
+                       MotorMode mode = MotorMode::Run,
                        std::uint8_t fault = 0) {
   CanFrame frame;
   frame.id = (0x02U << 24) | (static_cast<std::uint32_t>(mode) << 22) |
              (static_cast<std::uint32_t>(fault & 0x3F) << 16) |
-             (static_cast<std::uint32_t>(motor_id) << 8) | kHostId;
+             (static_cast<std::uint32_t>(motor_id) << 8) | bus::host_id;
   const auto& limits = Rs02();
   const std::uint16_t pos_u =
-      FloatToUint(position, -limits.position, limits.position);
+      float_to_uint(position, -limits.position, limits.position);
   const std::uint16_t vel_u =
-      FloatToUint(velocity, -limits.velocity, limits.velocity);
+      float_to_uint(velocity, -limits.velocity, limits.velocity);
   const std::uint16_t torque_u =
-      FloatToUint(torque, -limits.torque, limits.torque);
+      float_to_uint(torque, -limits.torque, limits.torque);
   const auto temp_u = static_cast<std::uint16_t>(temperature * 10);
   frame.data = {
       static_cast<std::uint8_t>(pos_u >> 8),
@@ -70,8 +70,8 @@ CanFrame FeedbackFrame(std::uint8_t motor_id, double position, double velocity,
 CanFrame ParamResponseUint8(std::uint8_t motor_id, std::uint16_t index,
                             std::uint8_t value) {
   CanFrame frame;
-  frame.id =
-      (0x11U << 24) | (static_cast<std::uint32_t>(motor_id) << 8) | kHostId;
+  frame.id = (0x11U << 24) | (static_cast<std::uint32_t>(motor_id) << 8) |
+             bus::host_id;
   frame.data[0] = static_cast<std::uint8_t>(index & 0xFF);
   frame.data[1] = static_cast<std::uint8_t>(index >> 8);
   frame.data[4] = value;
@@ -81,8 +81,8 @@ CanFrame ParamResponseUint8(std::uint8_t motor_id, std::uint16_t index,
 CanFrame ParamResponseFloat(std::uint8_t motor_id, std::uint16_t index,
                             float value) {
   CanFrame frame;
-  frame.id =
-      (0x11U << 24) | (static_cast<std::uint32_t>(motor_id) << 8) | kHostId;
+  frame.id = (0x11U << 24) | (static_cast<std::uint32_t>(motor_id) << 8) |
+             bus::host_id;
   frame.data[0] = static_cast<std::uint8_t>(index & 0xFF);
   frame.data[1] = static_cast<std::uint8_t>(index >> 8);
   std::memcpy(&frame.data[4], &value, sizeof(value));
@@ -93,9 +93,9 @@ class RobstrideMotorTest : public ::testing::Test {
  protected:
   RobstrideMotorTest() {
     RobstrideMotor::Config config;
-    config.motor_id = kMotorId;
-    config.host_id = kHostId;
-    config.actuator_type = ActuatorType::kRs02;
+    config.motor_id = bus::motor_id;
+    config.host_id = bus::host_id;
+    config.actuator_type = ActuatorType::Rs02;
     config.response_timeout = std::chrono::milliseconds(10);
     motor_ = std::make_unique<RobstrideMotor>(can_, config);
   }
@@ -105,9 +105,9 @@ class RobstrideMotorTest : public ::testing::Test {
 };
 
 TEST_F(RobstrideMotorTest, EnableSendsFrameAndReturnsFeedback) {
-  can_->responses.push_back(FeedbackFrame(kMotorId, 1.0, 2.0, 0.5, 31.0));
+  can_->responses.push_back(FeedbackFrame(bus::motor_id, 1.0, 2.0, 0.5, 31.0));
 
-  const Feedback feedback = motor_->Enable();
+  const Feedback feedback = motor_->enable();
 
   ASSERT_EQ(can_->sent.size(), 1U);
   EXPECT_EQ(can_->sent[0].id, 0x0300FD01U);
@@ -119,9 +119,9 @@ TEST_F(RobstrideMotorTest, EnableSendsFrameAndReturnsFeedback) {
 }
 
 TEST_F(RobstrideMotorTest, DisableSendsStopFrame) {
-  can_->responses.push_back(FeedbackFrame(kMotorId, 0.0, 0.0, 0.0, 30.0));
+  can_->responses.push_back(FeedbackFrame(bus::motor_id, 0.0, 0.0, 0.0, 30.0));
 
-  motor_->Disable(/*clear_fault=*/true);
+  motor_->disable(/*clear_fault=*/true);
 
   ASSERT_EQ(can_->sent.size(), 1U);
   EXPECT_EQ(can_->sent[0].id, 0x0400FD01U);
@@ -129,25 +129,26 @@ TEST_F(RobstrideMotorTest, DisableSendsStopFrame) {
 }
 
 TEST_F(RobstrideMotorTest, ThrowsTimeoutWhenNoResponse) {
-  EXPECT_THROW(motor_->Enable(), TimeoutError);
+  EXPECT_THROW(motor_->enable(), TimeoutError);
 }
 
 TEST_F(RobstrideMotorTest, IgnoresFramesFromOtherMotors) {
   can_->responses.push_back(FeedbackFrame(0x22, 5.0, 5.0, 5.0, 50.0));
-  can_->responses.push_back(FeedbackFrame(kMotorId, 1.0, 0.0, 0.0, 30.0));
+  can_->responses.push_back(FeedbackFrame(bus::motor_id, 1.0, 0.0, 0.0, 30.0));
 
-  const Feedback feedback = motor_->Enable();
+  const Feedback feedback = motor_->enable();
   EXPECT_NEAR(feedback.position, 1.0, 1e-3);
 }
 
 TEST_F(RobstrideMotorTest, SetRunModeStopsWritesAndVerifies) {
-  can_->responses.push_back(FeedbackFrame(kMotorId, 0, 0, 0, 30));  // stop
-  can_->responses.push_back(FeedbackFrame(kMotorId, 0, 0, 0, 30));  // write
+  can_->responses.push_back(FeedbackFrame(bus::motor_id, 0, 0, 0, 30));  // stop
+  can_->responses.push_back(
+      FeedbackFrame(bus::motor_id, 0, 0, 0, 30));  // write
   can_->responses.push_back(ParamResponseUint8(
-      kMotorId, param_index::kRunMode,
-      static_cast<std::uint8_t>(RunMode::kVelocity)));  // read back
+      bus::motor_id, param_index::run_mode,
+      static_cast<std::uint8_t>(RunMode::Velocity)));  // read back
 
-  motor_->SetRunMode(RunMode::kVelocity);
+  motor_->set_run_mode(RunMode::Velocity);
 
   ASSERT_EQ(can_->sent.size(), 3U);
   EXPECT_EQ(can_->sent[0].id, 0x0400FD01U);  // stop
@@ -159,19 +160,19 @@ TEST_F(RobstrideMotorTest, SetRunModeStopsWritesAndVerifies) {
 }
 
 TEST_F(RobstrideMotorTest, SetRunModeThrowsOnVerificationMismatch) {
-  can_->responses.push_back(FeedbackFrame(kMotorId, 0, 0, 0, 30));
-  can_->responses.push_back(FeedbackFrame(kMotorId, 0, 0, 0, 30));
-  can_->responses.push_back(ParamResponseUint8(
-      kMotorId, param_index::kRunMode,
-      static_cast<std::uint8_t>(RunMode::kOperationControl)));
+  can_->responses.push_back(FeedbackFrame(bus::motor_id, 0, 0, 0, 30));
+  can_->responses.push_back(FeedbackFrame(bus::motor_id, 0, 0, 0, 30));
+  can_->responses.push_back(
+      ParamResponseUint8(bus::motor_id, param_index::run_mode,
+                         static_cast<std::uint8_t>(RunMode::OperationControl)));
 
-  EXPECT_THROW(motor_->SetRunMode(RunMode::kVelocity), std::runtime_error);
+  EXPECT_THROW(motor_->set_run_mode(RunMode::Velocity), std::runtime_error);
 }
 
 TEST_F(RobstrideMotorTest, SendVelocityCommandWritesSpdRef) {
-  can_->responses.push_back(FeedbackFrame(kMotorId, 0.0, 4.9, 0.2, 32.0));
+  can_->responses.push_back(FeedbackFrame(bus::motor_id, 0.0, 4.9, 0.2, 32.0));
 
-  const Feedback feedback = motor_->SendVelocityCommand(5.0);
+  const Feedback feedback = motor_->send_velocity_command(5.0);
 
   ASSERT_EQ(can_->sent.size(), 1U);
   EXPECT_EQ(can_->sent[0].id, 0x1200FD01U);
@@ -184,10 +185,11 @@ TEST_F(RobstrideMotorTest, SendVelocityCommandWritesSpdRef) {
 }
 
 TEST_F(RobstrideMotorTest, ConfigureVelocityModeWritesLimits) {
-  can_->responses.push_back(FeedbackFrame(kMotorId, 0, 0, 0, 30));
-  can_->responses.push_back(FeedbackFrame(kMotorId, 0, 0, 0, 30));
+  can_->responses.push_back(FeedbackFrame(bus::motor_id, 0, 0, 0, 30));
+  can_->responses.push_back(FeedbackFrame(bus::motor_id, 0, 0, 0, 30));
 
-  motor_->ConfigureVelocityMode(/*current_limit=*/10.0, /*acceleration=*/20.0);
+  motor_->configure_velocity_mode(/*current_limit=*/10.0,
+                                  /*acceleration=*/20.0);
 
   ASSERT_EQ(can_->sent.size(), 2U);
   EXPECT_EQ(can_->sent[0].data[0], 0x18);  // limit_cur 0x7018
@@ -195,11 +197,11 @@ TEST_F(RobstrideMotorTest, ConfigureVelocityModeWritesLimits) {
 }
 
 TEST_F(RobstrideMotorTest, SendPositionCspCommandWritesLimitThenTarget) {
-  can_->responses.push_back(FeedbackFrame(kMotorId, 0, 0, 0, 30));
-  can_->responses.push_back(FeedbackFrame(kMotorId, 1.5, 0, 0, 30));
+  can_->responses.push_back(FeedbackFrame(bus::motor_id, 0, 0, 0, 30));
+  can_->responses.push_back(FeedbackFrame(bus::motor_id, 1.5, 0, 0, 30));
 
   const Feedback feedback =
-      motor_->SendPositionCspCommand(/*position=*/1.5, /*speed_limit=*/3.0);
+      motor_->send_position_csp_command(/*position=*/1.5, /*speed_limit=*/3.0);
 
   ASSERT_EQ(can_->sent.size(), 2U);
   EXPECT_EQ(can_->sent[0].data[0], 0x17);  // limit_spd 0x7017
@@ -209,29 +211,29 @@ TEST_F(RobstrideMotorTest, SendPositionCspCommandWritesLimitThenTarget) {
 
 TEST_F(RobstrideMotorTest, ReadParamFloat) {
   can_->responses.push_back(
-      ParamResponseFloat(kMotorId, param_index::kVBus, 48.5F));
+      ParamResponseFloat(bus::motor_id, param_index::v_bus, 48.5F));
 
-  EXPECT_FLOAT_EQ(motor_->ReadParamFloat(param_index::kVBus), 48.5F);
+  EXPECT_FLOAT_EQ(motor_->read_param_float(param_index::v_bus), 48.5F);
   ASSERT_EQ(can_->sent.size(), 1U);
   EXPECT_EQ(can_->sent[0].id, 0x1100FD01U);
 }
 
 TEST_F(RobstrideMotorTest, FeedbackFramesUpdateCacheWhileWaitingForParam) {
-  can_->responses.push_back(FeedbackFrame(kMotorId, 2.5, 0, 0, 33.0));
+  can_->responses.push_back(FeedbackFrame(bus::motor_id, 2.5, 0, 0, 33.0));
   can_->responses.push_back(
-      ParamResponseFloat(kMotorId, param_index::kVBus, 48.0F));
+      ParamResponseFloat(bus::motor_id, param_index::v_bus, 48.0F));
 
-  motor_->ReadParamFloat(param_index::kVBus);
+  motor_->read_param_float(param_index::v_bus);
 
   ASSERT_TRUE(motor_->last_feedback().has_value());
   EXPECT_NEAR(motor_->last_feedback()->position, 2.5, 1e-3);
 }
 
 TEST_F(RobstrideMotorTest, SetMechanicalZeroStopsFirst) {
-  can_->responses.push_back(FeedbackFrame(kMotorId, 0, 0, 0, 30));
-  can_->responses.push_back(FeedbackFrame(kMotorId, 0, 0, 0, 30));
+  can_->responses.push_back(FeedbackFrame(bus::motor_id, 0, 0, 0, 30));
+  can_->responses.push_back(FeedbackFrame(bus::motor_id, 0, 0, 0, 30));
 
-  motor_->SetMechanicalZero();
+  motor_->set_mechanical_zero();
 
   ASSERT_EQ(can_->sent.size(), 2U);
   EXPECT_EQ(can_->sent[0].id, 0x0400FD01U);  // stop
@@ -240,10 +242,10 @@ TEST_F(RobstrideMotorTest, SetMechanicalZeroStopsFirst) {
 }
 
 TEST_F(RobstrideMotorTest, FaultBitsExposedInFeedback) {
-  can_->responses.push_back(
-      FeedbackFrame(kMotorId, 0, 0, 0, 30, MotorMode::kRun, /*fault=*/0x04));
+  can_->responses.push_back(FeedbackFrame(bus::motor_id, 0, 0, 0, 30,
+                                          MotorMode::Run, /*fault=*/0x04));
 
-  const Feedback feedback = motor_->Enable();
+  const Feedback feedback = motor_->enable();
   EXPECT_TRUE(feedback.fault.any());
   EXPECT_TRUE(feedback.fault.overtemperature());
 }
