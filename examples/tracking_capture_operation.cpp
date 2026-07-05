@@ -32,14 +32,14 @@ int main(int argc, char** argv) {
   if (!args) {
     return EXIT_FAILURE;
   }
-  const double kp = (argc > 4) ? std::stod(argv[4]) : 4.0;
-  const double kd = (argc > 5) ? std::stod(argv[5]) : 1.0;
-
   constexpr double kPi = std::numbers::pi;
   const std::vector<tracking_capture::Segment> profile = {
       {1.0, 0.0}, {3.0, kPi / 2}, {3.0, -kPi / 2}, {3.0, 0.0}};
 
   try {
+    const double kp = (argc > 4) ? std::stod(argv[4]) : 4.0;
+    const double kd = (argc > 5) ? std::stod(argv[5]) : 1.0;
+
     auto can = tracking_capture::MakeCanInterface(args->interface_name,
                                                   args->motor_id);
     auto motor = tracking_capture::MakeRs02Motor(can, args->motor_id);

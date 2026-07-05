@@ -24,12 +24,42 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
 MODES = {
-    # mode: (tracked column, unit, settle_skip [s], plot title)
-    "velocity": ("velocity", "rad/s", 1.5, "Velocity mode: command tracking"),
-    "position": ("position", "rad", 2.0, "CSP position mode: command tracking"),
-    "pp": ("position", "rad", 2.0, "PP position mode: command tracking"),
-    "current": ("iq", "A", 0.5, "Current mode: command tracking"),
-    "operation": ("position", "rad", 1.5, "Operation control: command tracking"),
+    # mode: (tracked column, unit, settle_skip [s], plot title, bottom-plot title)
+    "velocity": (
+        "velocity",
+        "rad/s",
+        1.5,
+        "Velocity mode: command tracking",
+        "Resulting position (unwrapped, continuous)",
+    ),
+    "position": (
+        "position",
+        "rad",
+        2.0,
+        "CSP position mode: command tracking",
+        "Velocity during the moves",
+    ),
+    "pp": (
+        "position",
+        "rad",
+        2.0,
+        "PP position mode: command tracking",
+        "Velocity during the moves",
+    ),
+    "current": (
+        "iq",
+        "A",
+        0.5,
+        "Current mode: command tracking",
+        "Resulting velocity (unloaded shaft)",
+    ),
+    "operation": (
+        "position",
+        "rad",
+        1.5,
+        "Operation control: command tracking",
+        "Velocity during the moves",
+    ),
 }
 
 
@@ -69,22 +99,17 @@ def main():
     csv_path = Path(sys.argv[2])
     out_path = Path(sys.argv[3]) if len(sys.argv) > 3 else csv_path.with_suffix(".png")
 
-    tracked, unit, settle_skip, title = MODES[mode]
+    tracked, unit, settle_skip, title, bottom_title = MODES[mode]
     data = load(csv_path)
     fig, axes = plt.subplots(2, 1, figsize=(10, 6.5), sharex=True)
 
     if mode == "velocity":
         axes[1].plot(data["t"], data["position"], color="tab:green", linewidth=1.2)
         axes[1].set_ylabel("position [rad]")
-        axes[1].set_title("Resulting position (unwrapped, continuous)")
-    elif mode == "current":
-        axes[1].plot(data["t"], data["velocity"], color="tab:purple", linewidth=1.0)
-        axes[1].set_ylabel("velocity [rad/s]")
-        axes[1].set_title("Resulting velocity (unloaded shaft)")
     else:
         axes[1].plot(data["t"], data["velocity"], color="tab:purple", linewidth=1.0)
         axes[1].set_ylabel("velocity [rad/s]")
-        axes[1].set_title("Velocity during the moves")
+    axes[1].set_title(bottom_title)
 
     axes[0].set_title(title)
     axes[0].step(

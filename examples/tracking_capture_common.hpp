@@ -65,7 +65,12 @@ inline std::optional<Args> ParseArgs(int argc, char** argv,
   }
   Args args;
   args.interface_name = argv[1];
-  args.motor_id = static_cast<std::uint8_t>(std::stoi(argv[2]));
+  try {
+    args.motor_id = static_cast<std::uint8_t>(std::stoi(argv[2]));
+  } catch (const std::exception&) {
+    std::cerr << "error: invalid motor-id '" << argv[2] << "'\n";
+    return std::nullopt;
+  }
   args.out_path = argv[3];
   return args;
 }
