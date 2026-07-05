@@ -21,7 +21,7 @@ A ROS-independent C++ driver library for [RobStride](https://www.robstride.com/)
 
 ## Tracking performance (RS02, real hardware)
 
-Measured on an unloaded, as-delivered RS02 (see [docs/test_results.md](docs/test_results.md) for preconditions and how to reproduce with [examples/tracking_capture.cpp](examples/tracking_capture.cpp)).
+Measured on an unloaded, as-delivered RS02 (see [docs/test_results.md](docs/test_results.md) for preconditions and how to reproduce with the `examples/tracking_capture_<mode>.cpp` programs).
 
 Velocity mode — the actual velocity follows step commands (0 → +2 → +4 → −2 → 0 rad/s) with a steady-state mean error below 0.3 %:
 
@@ -31,7 +31,7 @@ CSP position mode — π-sized position steps are executed as constant-speed ram
 
 ![CSP position mode tracking](docs/images/position_tracking.png)
 
-See [docs/test_results.md](docs/test_results.md) for the test setup and detailed statistics.
+See [docs/test_results.md](docs/test_results.md) for the test setup, detailed statistics and the results of the remaining control modes (PP position, current, operation/MIT control).
 
 ## Supported motors
 
@@ -123,7 +123,7 @@ The repository also ships a `package.xml` (`<build_type>cmake</build_type>`) so 
 | [docs/setup.md](docs/setup.md) | Host setup: SocketCAN configuration, persistence, vcan testing |
 | [docs/architecture.md](docs/architecture.md) | Library layering, class responsibilities, error handling, test strategy |
 | [docs/protocol.md](docs/protocol.md) | RobStride private CAN protocol summary (frame layouts, parameter table) |
-| [docs/test_results.md](docs/test_results.md) | Hardware-in-the-loop command-tracking results (velocity / CSP position) |
+| [docs/test_results.md](docs/test_results.md) | Hardware-in-the-loop command-tracking results (all control modes) |
 
 ## Development
 
@@ -144,7 +144,7 @@ pre-commit run --all-files # or run them on the whole tree
 The individual tools can also be invoked directly:
 
 ```bash
-clang-format -i src/*.cpp include/robstride_driver/*.hpp tests/*.cpp examples/*.cpp
+clang-format -i src/*.cpp include/robstride_driver/*.hpp tests/*.cpp examples/*.cpp examples/*.hpp
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 clang-tidy -p build src/*.cpp examples/*.cpp tests/*.cpp
 ruff check tools/ && ruff format tools/
