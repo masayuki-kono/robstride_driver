@@ -20,7 +20,7 @@ layering and class responsibilities and
 | `include/robstride_driver/` | Public headers (the installed API) |
 | `src/` | Library implementation |
 | `tests/` | GoogleTest unit tests (no hardware required) |
-| `examples/` | CLI examples (`velocity_control`, `tracking_capture`) |
+| `examples/` | CLI examples (`velocity_control`, `tracking_capture_<mode>`) |
 | `tools/` | Python helper scripts (plotting) |
 | `docs/` | Hardware setup, protocol, architecture, test results |
 | `third_party/Product_Information` | Official RobStride documentation (git submodule, reference only — never edit) |
@@ -48,7 +48,7 @@ unless you need the vendor documentation.
 Run the checks the same way CI does:
 
 ```bash
-clang-format --dry-run --Werror src/*.cpp include/robstride_driver/*.hpp tests/*.cpp examples/*.cpp
+clang-format --dry-run --Werror src/*.cpp include/robstride_driver/*.hpp tests/*.cpp examples/*.cpp examples/*.hpp
 clang-tidy -p build src/*.cpp examples/*.cpp tests/*.cpp
 ruff check tools/ && ruff format --check tools/
 ```

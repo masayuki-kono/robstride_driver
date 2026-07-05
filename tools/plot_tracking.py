@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 # Copyright 2026 masayuki-kono
 # SPDX-License-Identifier: MIT
-"""Plot the CSV produced by examples/tracking_capture.
+"""Plot the CSV produced by the examples/tracking_capture_* programs.
 
 Usage:
     plot_tracking.py velocity velocity_tracking.csv [out.png]
     plot_tracking.py position position_tracking.csv [out.png]
+    plot_tracking.py pp pp_tracking.csv [out.png]
+    plot_tracking.py current current_tracking.csv [out.png]
+    plot_tracking.py operation operation_tracking.csv [out.png]
 
 Prints per-plateau steady-state statistics and writes the tracking plot
 (default output: <csv basename>.png). Requires matplotlib.
@@ -19,6 +22,15 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
+
+MODES = {
+    # mode: (tracked column, unit, settle_skip [s], plot title)
+    "velocity": ("velocity", "rad/s", 1.5, "Velocity mode: command tracking"),
+    "position": ("position", "rad", 2.0, "CSP position mode: command tracking"),
+    "pp": ("position", "rad", 2.0, "PP position mode: command tracking"),
+    "current": ("iq", "A", 0.5, "Current mode: command tracking"),
+    "operation": ("position", "rad", 1.5, "Operation control: command tracking"),
+}
 
 
 def load(path):
@@ -50,29 +62,31 @@ def plateau_stats(times, targets, actuals, settle_skip):
 
 
 def main():
-    if len(sys.argv) < 3 or sys.argv[1] not in ("velocity", "position"):
+    if len(sys.argv) < 3 or sys.argv[1] not in MODES:
         print(__doc__, file=sys.stderr)
         return 1
     mode = sys.argv[1]
     csv_path = Path(sys.argv[2])
     out_path = Path(sys.argv[3]) if len(sys.argv) > 3 else csv_path.with_suffix(".png")
 
+    tracked, unit, settle_skip, title = MODES[mode]
     data = load(csv_path)
     fig, axes = plt.subplots(2, 1, figsize=(10, 6.5), sharex=True)
 
     if mode == "velocity":
-        tracked, unit, settle_skip = "velocity", "rad/s", 1.5
         axes[1].plot(data["t"], data["position"], color="tab:green", linewidth=1.2)
         axes[1].set_ylabel("position [rad]")
         axes[1].set_title("Resulting position (unwrapped, continuous)")
-        axes[0].set_title("Velocity mode: command tracking")
+    elif mode == "current":
+        axes[1].plot(data["t"], data["velocity"], color="tab:purple", linewidth=1.0)
+        axes[1].set_ylabel("velocity [rad/s]")
+        axes[1].set_title("Resulting velocity (unloaded shaft)")
     else:
-        tracked, unit, settle_skip = "position", "rad", 2.0
         axes[1].plot(data["t"], data["velocity"], color="tab:purple", linewidth=1.0)
         axes[1].set_ylabel("velocity [rad/s]")
         axes[1].set_title("Velocity during the moves")
-        axes[0].set_title("CSP position mode: command tracking")
 
+    axes[0].set_title(title)
     axes[0].step(
         data["t"],
         data["target"],
