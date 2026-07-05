@@ -45,7 +45,17 @@ Mating connector: AMASS XT30(2+2)-F.G.B.
 
 ## USB-CAN adapter
 
-### SocketCAN adapters (recommended)
+The manual specifies the motor-side CAN protocol only; it does not define how
+the host PC reaches the bus. On Linux, the path depends on the USB-CAN adapter.
+This is a **transport** difference, not a protocol difference — the same
+private-protocol CAN frames travel on the bus regardless of which adapter is used.
+
+| Transport | Adapter | Host interface | MotorStudio | Hardware verified |
+|-----------|---------|----------------|-------------|-------------------|
+| SocketCAN | Generic SocketCAN USB-CAN (e.g. Canable / candleLight, `gs_usb`) | `can0` etc. (`PF_CAN` / `SOCK_RAW`) | Not supported | Unit tests only (no RS02 bench run yet) |
+| AT serial | Official RobStride USB-CAN module | `/dev/ttyUSB0` (CH340, 921600 8N1) | **Supported (recommended by vendor)** | **RS02 bench-tested** (see [test_results.md](test_results.md)) |
+
+### SocketCAN adapters
 
 Any adapter with a mainline Linux SocketCAN driver works, for example:
 
@@ -63,6 +73,25 @@ The RobStride official USB-CAN module (the adapter shipped for the vendor's Wind
 - works in AT mode by default (DIP switch 1 OFF); DIP switch 2 ON connects a 120 Ω terminator
 
 Use `AtSerialCanInterface("/dev/ttyUSB0")` with this module. The CH340 driver is in the mainline kernel, so the module shows up as `/dev/ttyUSB*` automatically; add your user to the `dialout` group for access.
+
+### Operational guidance
+
+MotorStudio, the vendor maintenance tool, supports **only** the official
+USB-CAN module (AT mode). The vendor recommends this adapter for tuning and
+maintenance.
+
+If your workflow connects the motor to a control host during operation and to a
+maintenance PC running MotorStudio during service, using the **official module
+on the control host as well** simplifies day-to-day work:
+
+- Same adapter and connection setup on the control host and the maintenance PC
+- No need to procure and qualify a separate SocketCAN adapter for production
+- The AT serial path used in [test_results.md](test_results.md) can be reused in deployment
+
+SocketCAN remains attractive when you want the standard Linux CAN stack:
+`can-utils` for debugging, kernel-side receive filters, and sharing the bus
+across multiple processes. Choose the transport based on maintenance workflow
+and tooling requirements; the motor protocol is unchanged either way.
 
 ## Bus wiring
 

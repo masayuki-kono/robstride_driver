@@ -120,6 +120,7 @@ The repository also ships a `package.xml` (`<build_type>cmake</build_type>`) so 
 
 | Document | Contents |
 |----------|----------|
+| [docs/background.md](docs/background.md) | Why this library exists, existing OSS comparison, ROS-independent design |
 | [docs/hardware.md](docs/hardware.md) | Assumed hardware setup: RS02 motor, USB-CAN adapter, wiring, termination, multi-motor bus |
 | [docs/setup.md](docs/setup.md) | Host setup: SocketCAN configuration, persistence, vcan testing |
 | [docs/architecture.md](docs/architecture.md) | Library layering, class responsibilities, error handling, test strategy |

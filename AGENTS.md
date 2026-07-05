@@ -23,7 +23,7 @@ layering and class responsibilities and
 | `tests/fixtures/` | Shared test constants (CAN bus topology, AT serial samples) |
 | `examples/` | CLI examples (`velocity_control`, `tracking_capture_<mode>`) |
 | `tools/` | Python helper scripts (plotting) |
-| `docs/` | Hardware setup, protocol, architecture, test results |
+| `docs/` | Background, hardware setup, protocol, architecture, test results |
 | `third_party/Product_Information` | Official RobStride documentation (git submodule, reference only — never edit) |
 
 ## Build and test
