@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/masayuki-kono/robstride_driver/actions/workflows/ci.yml/badge.svg)](https://github.com/masayuki-kono/robstride_driver/actions/workflows/ci.yml)
 [![Lint](https://github.com/masayuki-kono/robstride_driver/actions/workflows/lint.yml/badge.svg)](https://github.com/masayuki-kono/robstride_driver/actions/workflows/lint.yml)
-[![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/masayuki-kono/robstride_driver?labelColor=171717&color=FF570A&label=CodeRabbit+Reviews)](https://coderabbit.ai)
+![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/masayuki-kono/robstride_driver?utm_source=oss&utm_medium=github&utm_campaign=masayuki-kono%2Frobstride_driver&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 A ROS-independent C++ driver library for [RobStride](https://www.robstride.com/) quasi-direct-drive motors over Linux SocketCAN or the official RobStride USB-CAN module.
