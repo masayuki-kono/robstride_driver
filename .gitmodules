@@ -1,9 +1,3 @@
-[submodule "third_party/robstride_actuator_bridge"]
-	path = third_party/robstride_actuator_bridge
-	url = https://github.com/RobStride/robstride_actuator_bridge.git
-[submodule "third_party/robstride_ros_sample"]
-	path = third_party/robstride_ros_sample
-	url = https://github.com/RobStride/robstride_ros_sample.git
 [submodule "third_party/Product_Information"]
 	path = third_party/Product_Information
 	url = https://github.com/RobStride/Product_Information.git

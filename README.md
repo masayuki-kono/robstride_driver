@@ -1,5 +1,10 @@
 # robstride_driver
 
+[![CI](https://github.com/masayuki-kono/robstride_driver/actions/workflows/ci.yml/badge.svg)](https://github.com/masayuki-kono/robstride_driver/actions/workflows/ci.yml)
+[![Lint](https://github.com/masayuki-kono/robstride_driver/actions/workflows/lint.yml/badge.svg)](https://github.com/masayuki-kono/robstride_driver/actions/workflows/lint.yml)
+[![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/masayuki-kono/robstride_driver?labelColor=171717&color=FF570A&label=CodeRabbit+Reviews)](https://coderabbit.ai)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 A ROS-independent C++ driver library for [RobStride](https://www.robstride.com/) quasi-direct-drive motors over Linux SocketCAN or the official RobStride USB-CAN module.
 
 ## Features
@@ -119,6 +124,34 @@ The repository also ships a `package.xml` (`<build_type>cmake</build_type>`) so 
 | [docs/architecture.md](docs/architecture.md) | Library layering, class responsibilities, error handling, test strategy |
 | [docs/protocol.md](docs/protocol.md) | RobStride private CAN protocol summary (frame layouts, parameter table) |
 | [docs/test_results.md](docs/test_results.md) | Hardware-in-the-loop command-tracking results (velocity / CSP position) |
+
+## Development
+
+CI builds the library with gcc and clang and runs the unit tests
+([ci.yml](.github/workflows/ci.yml)); a separate workflow checks
+clang-format, clang-tidy and ruff ([lint.yml](.github/workflows/lint.yml)).
+Pull requests are also reviewed by [CodeRabbit](https://coderabbit.ai).
+
+To run the same formatters and linters locally, install
+[pre-commit](https://pre-commit.com/) and register the git hook once:
+
+```bash
+pipx install pre-commit    # or: pip install pre-commit
+pre-commit install         # runs the hooks on every commit
+pre-commit run --all-files # or run them on the whole tree
+```
+
+The individual tools can also be invoked directly:
+
+```bash
+clang-format -i src/*.cpp include/robstride_driver/*.hpp tests/*.cpp examples/*.cpp
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+clang-tidy -p build src/*.cpp examples/*.cpp tests/*.cpp
+ruff check tools/ && ruff format tools/
+```
+
+Agent-oriented contributor notes (build commands, style, verification
+steps) live in [AGENTS.md](AGENTS.md).
 
 ## License
 

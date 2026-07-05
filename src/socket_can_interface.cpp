@@ -15,6 +15,7 @@
 #include <cstring>
 #include <stdexcept>
 #include <system_error>
+#include <utility>
 
 namespace robstride {
 
@@ -33,7 +34,7 @@ SocketCanInterface::SocketCanInterface(const std::string& interface_name)
     ThrowErrno("robstride: failed to open CAN socket");
   }
 
-  struct ifreq ifr{};
+  struct ifreq ifr {};
   std::strncpy(ifr.ifr_name, interface_name.c_str(), IFNAMSIZ - 1);
   if (::ioctl(socket_fd_, SIOCGIFINDEX, &ifr) < 0) {
     ::close(socket_fd_);
@@ -41,7 +42,7 @@ SocketCanInterface::SocketCanInterface(const std::string& interface_name)
     ThrowErrno("robstride: unknown CAN interface '" + interface_name + "'");
   }
 
-  struct sockaddr_can addr{};
+  struct sockaddr_can addr {};
   addr.can_family = AF_CAN;
   addr.can_ifindex = ifr.ifr_ifindex;
   if (::bind(socket_fd_, reinterpret_cast<struct sockaddr*>(&addr),
@@ -59,8 +60,11 @@ SocketCanInterface::~SocketCanInterface() {
   }
 }
 
+// Mutates kernel-side socket state, so it stays non-const even though it
+// does not touch any data member.
+// NOLINTNEXTLINE(readability-make-member-function-const)
 void SocketCanInterface::SetMotorIdFilter(std::uint8_t motor_id) {
-  struct can_filter filter{};
+  struct can_filter filter {};
   filter.can_id = (static_cast<canid_t>(motor_id) << 8) | CAN_EFF_FLAG;
   filter.can_mask = (0xFFU << 8) | CAN_EFF_FLAG;
   if (::setsockopt(socket_fd_, SOL_CAN_RAW, CAN_RAW_FILTER, &filter,
@@ -70,13 +74,13 @@ void SocketCanInterface::SetMotorIdFilter(std::uint8_t motor_id) {
 }
 
 void SocketCanInterface::Send(const CanFrame& frame) {
-  struct can_frame raw{};
+  struct can_frame raw {};
   raw.can_id = (frame.id & CAN_EFF_MASK) | CAN_EFF_FLAG;
   raw.can_dlc = frame.dlc;
   std::memcpy(raw.data, frame.data.data(), frame.data.size());
 
   const ssize_t written = ::write(socket_fd_, &raw, sizeof(raw));
-  if (written != static_cast<ssize_t>(sizeof(raw))) {
+  if (std::cmp_not_equal(written, sizeof(raw))) {
     ThrowErrno("robstride: failed to send CAN frame on '" + interface_name_ +
                "'");
   }
@@ -88,7 +92,7 @@ std::optional<CanFrame> SocketCanInterface::Receive(
   FD_ZERO(&read_fds);
   FD_SET(socket_fd_, &read_fds);
 
-  struct timeval tv{};
+  struct timeval tv {};
   tv.tv_sec = static_cast<time_t>(timeout.count() / 1000);
   tv.tv_usec = static_cast<suseconds_t>((timeout.count() % 1000) * 1000);
 
@@ -97,16 +101,16 @@ std::optional<CanFrame> SocketCanInterface::Receive(
     ThrowErrno("robstride: select() failed on CAN socket");
   }
   if (ready == 0) {
-    return std::nullopt; // timeout
+    return std::nullopt;  // timeout
   }
 
-  struct can_frame raw{};
+  struct can_frame raw {};
   const ssize_t received = ::read(socket_fd_, &raw, sizeof(raw));
   if (received < 0) {
     ThrowErrno("robstride: failed to read CAN frame");
   }
-  if (received != static_cast<ssize_t>(sizeof(raw)) ||
-      !(raw.can_id & CAN_EFF_FLAG)) {
+  if (std::cmp_not_equal(received, sizeof(raw)) ||
+      (raw.can_id & CAN_EFF_FLAG) == 0) {
     // Ignore short reads and non-extended frames.
     return std::nullopt;
   }

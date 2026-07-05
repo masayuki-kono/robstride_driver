@@ -39,8 +39,13 @@ def plateau_stats(times, targets, actuals, settle_skip):
         if idx:
             target = targets[seg_start]
             values = [actuals[j] for j in idx]
-            yield (t0, times[i - 1], target, sum(values) / len(values),
-                   max(abs(v - target) for v in values))
+            yield (
+                t0,
+                times[i - 1],
+                target,
+                sum(values) / len(values),
+                max(abs(v - target) for v in values),
+            )
         seg_start = i
 
 
@@ -68,10 +73,21 @@ def main():
         axes[1].set_title("Velocity during the moves")
         axes[0].set_title("CSP position mode: command tracking")
 
-    axes[0].step(data["t"], data["target"], where="post", color="tab:red",
-                 linewidth=1.8, label=f"target {tracked}")
-    axes[0].plot(data["t"], data[tracked], color="tab:blue", linewidth=1.0,
-                 label=f"actual {tracked}")
+    axes[0].step(
+        data["t"],
+        data["target"],
+        where="post",
+        color="tab:red",
+        linewidth=1.8,
+        label=f"target {tracked}",
+    )
+    axes[0].plot(
+        data["t"],
+        data[tracked],
+        color="tab:blue",
+        linewidth=1.0,
+        label=f"actual {tracked}",
+    )
     axes[0].set_ylabel(f"{tracked} [{unit}]")
     axes[0].legend(loc="upper right")
     for axis in axes:
@@ -84,9 +100,12 @@ def main():
 
     print(f"steady-state per plateau (first {settle_skip:g} s excluded):")
     for t0, t1, target, mean, max_err in plateau_stats(
-            data["t"], data["target"], data[tracked], settle_skip):
-        print(f"  {t0:5.1f}-{t1:5.1f}s target {target:+.3f} {unit}: "
-              f"mean {mean:+.4f}, max|err| {max_err:.4f}")
+        data["t"], data["target"], data[tracked], settle_skip
+    ):
+        print(
+            f"  {t0:5.1f}-{t1:5.1f}s target {target:+.3f} {unit}: "
+            f"mean {mean:+.4f}, max|err| {max_err:.4f}"
+        )
     return 0
 
 

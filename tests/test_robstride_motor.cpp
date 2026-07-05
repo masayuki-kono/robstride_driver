@@ -24,7 +24,8 @@ class MockCanInterface : public CanInterface {
  public:
   void Send(const CanFrame& frame) override { sent.push_back(frame); }
 
-  std::optional<CanFrame> Receive(std::chrono::milliseconds) override {
+  std::optional<CanFrame> Receive(
+      std::chrono::milliseconds /*timeout*/) override {
     if (responses.empty()) {
       return std::nullopt;
     }
@@ -42,8 +43,7 @@ CanFrame FeedbackFrame(std::uint8_t motor_id, double position, double velocity,
                        MotorMode mode = MotorMode::kRun,
                        std::uint8_t fault = 0) {
   CanFrame frame;
-  frame.id = (0x02U << 24) |
-             (static_cast<std::uint32_t>(mode) << 22) |
+  frame.id = (0x02U << 24) | (static_cast<std::uint32_t>(mode) << 22) |
              (static_cast<std::uint32_t>(fault & 0x3F) << 16) |
              (static_cast<std::uint32_t>(motor_id) << 8) | kHostId;
   const auto& limits = Rs02();
@@ -70,8 +70,8 @@ CanFrame FeedbackFrame(std::uint8_t motor_id, double position, double velocity,
 CanFrame ParamResponseUint8(std::uint8_t motor_id, std::uint16_t index,
                             std::uint8_t value) {
   CanFrame frame;
-  frame.id = (0x11U << 24) | (static_cast<std::uint32_t>(motor_id) << 8) |
-             kHostId;
+  frame.id =
+      (0x11U << 24) | (static_cast<std::uint32_t>(motor_id) << 8) | kHostId;
   frame.data[0] = static_cast<std::uint8_t>(index & 0xFF);
   frame.data[1] = static_cast<std::uint8_t>(index >> 8);
   frame.data[4] = value;
@@ -81,8 +81,8 @@ CanFrame ParamResponseUint8(std::uint8_t motor_id, std::uint16_t index,
 CanFrame ParamResponseFloat(std::uint8_t motor_id, std::uint16_t index,
                             float value) {
   CanFrame frame;
-  frame.id = (0x11U << 24) | (static_cast<std::uint32_t>(motor_id) << 8) |
-             kHostId;
+  frame.id =
+      (0x11U << 24) | (static_cast<std::uint32_t>(motor_id) << 8) | kHostId;
   frame.data[0] = static_cast<std::uint8_t>(index & 0xFF);
   frame.data[1] = static_cast<std::uint8_t>(index >> 8);
   std::memcpy(&frame.data[4], &value, sizeof(value));
@@ -100,8 +100,7 @@ class RobstrideMotorTest : public ::testing::Test {
     motor_ = std::make_unique<RobstrideMotor>(can_, config);
   }
 
-  std::shared_ptr<MockCanInterface> can_ =
-      std::make_shared<MockCanInterface>();
+  std::shared_ptr<MockCanInterface> can_ = std::make_shared<MockCanInterface>();
   std::unique_ptr<RobstrideMotor> motor_;
 };
 
@@ -142,21 +141,21 @@ TEST_F(RobstrideMotorTest, IgnoresFramesFromOtherMotors) {
 }
 
 TEST_F(RobstrideMotorTest, SetRunModeStopsWritesAndVerifies) {
-  can_->responses.push_back(FeedbackFrame(kMotorId, 0, 0, 0, 30)); // stop
-  can_->responses.push_back(FeedbackFrame(kMotorId, 0, 0, 0, 30)); // write
+  can_->responses.push_back(FeedbackFrame(kMotorId, 0, 0, 0, 30));  // stop
+  can_->responses.push_back(FeedbackFrame(kMotorId, 0, 0, 0, 30));  // write
   can_->responses.push_back(ParamResponseUint8(
       kMotorId, param_index::kRunMode,
-      static_cast<std::uint8_t>(RunMode::kVelocity))); // read back
+      static_cast<std::uint8_t>(RunMode::kVelocity)));  // read back
 
   motor_->SetRunMode(RunMode::kVelocity);
 
   ASSERT_EQ(can_->sent.size(), 3U);
-  EXPECT_EQ(can_->sent[0].id, 0x0400FD01U); // stop
-  EXPECT_EQ(can_->sent[1].id, 0x1200FD01U); // write run_mode
+  EXPECT_EQ(can_->sent[0].id, 0x0400FD01U);  // stop
+  EXPECT_EQ(can_->sent[1].id, 0x1200FD01U);  // write run_mode
   EXPECT_EQ(can_->sent[1].data[0], 0x05);
   EXPECT_EQ(can_->sent[1].data[1], 0x70);
   EXPECT_EQ(can_->sent[1].data[4], 2);
-  EXPECT_EQ(can_->sent[2].id, 0x1100FD01U); // read run_mode
+  EXPECT_EQ(can_->sent[2].id, 0x1100FD01U);  // read run_mode
 }
 
 TEST_F(RobstrideMotorTest, SetRunModeThrowsOnVerificationMismatch) {
@@ -176,7 +175,7 @@ TEST_F(RobstrideMotorTest, SendVelocityCommandWritesSpdRef) {
 
   ASSERT_EQ(can_->sent.size(), 1U);
   EXPECT_EQ(can_->sent[0].id, 0x1200FD01U);
-  EXPECT_EQ(can_->sent[0].data[0], 0x0A); // spd_ref index 0x700A
+  EXPECT_EQ(can_->sent[0].data[0], 0x0A);  // spd_ref index 0x700A
   EXPECT_EQ(can_->sent[0].data[1], 0x70);
   float value = 0.0F;
   std::memcpy(&value, &can_->sent[0].data[4], sizeof(value));
@@ -191,8 +190,8 @@ TEST_F(RobstrideMotorTest, ConfigureVelocityModeWritesLimits) {
   motor_->ConfigureVelocityMode(/*current_limit=*/10.0, /*acceleration=*/20.0);
 
   ASSERT_EQ(can_->sent.size(), 2U);
-  EXPECT_EQ(can_->sent[0].data[0], 0x18); // limit_cur 0x7018
-  EXPECT_EQ(can_->sent[1].data[0], 0x22); // acc_rad 0x7022
+  EXPECT_EQ(can_->sent[0].data[0], 0x18);  // limit_cur 0x7018
+  EXPECT_EQ(can_->sent[1].data[0], 0x22);  // acc_rad 0x7022
 }
 
 TEST_F(RobstrideMotorTest, SendPositionCspCommandWritesLimitThenTarget) {
@@ -203,8 +202,8 @@ TEST_F(RobstrideMotorTest, SendPositionCspCommandWritesLimitThenTarget) {
       motor_->SendPositionCspCommand(/*position=*/1.5, /*speed_limit=*/3.0);
 
   ASSERT_EQ(can_->sent.size(), 2U);
-  EXPECT_EQ(can_->sent[0].data[0], 0x17); // limit_spd 0x7017
-  EXPECT_EQ(can_->sent[1].data[0], 0x16); // loc_ref 0x7016
+  EXPECT_EQ(can_->sent[0].data[0], 0x17);  // limit_spd 0x7017
+  EXPECT_EQ(can_->sent[1].data[0], 0x16);  // loc_ref 0x7016
   EXPECT_NEAR(feedback.position, 1.5, 1e-3);
 }
 
@@ -235,14 +234,14 @@ TEST_F(RobstrideMotorTest, SetMechanicalZeroStopsFirst) {
   motor_->SetMechanicalZero();
 
   ASSERT_EQ(can_->sent.size(), 2U);
-  EXPECT_EQ(can_->sent[0].id, 0x0400FD01U); // stop
-  EXPECT_EQ(can_->sent[1].id, 0x0600FD01U); // set zero
+  EXPECT_EQ(can_->sent[0].id, 0x0400FD01U);  // stop
+  EXPECT_EQ(can_->sent[1].id, 0x0600FD01U);  // set zero
   EXPECT_EQ(can_->sent[1].data[0], 1);
 }
 
 TEST_F(RobstrideMotorTest, FaultBitsExposedInFeedback) {
-  can_->responses.push_back(FeedbackFrame(kMotorId, 0, 0, 0, 30,
-                                          MotorMode::kRun, /*fault=*/0x04));
+  can_->responses.push_back(
+      FeedbackFrame(kMotorId, 0, 0, 0, 30, MotorMode::kRun, /*fault=*/0x04));
 
   const Feedback feedback = motor_->Enable();
   EXPECT_TRUE(feedback.fault.any());

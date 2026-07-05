@@ -55,7 +55,7 @@ int main(int argc, char** argv) {
 
   try {
     std::shared_ptr<robstride::CanInterface> can;
-    if (interface_name.rfind("/dev/", 0) == 0) {
+    if (interface_name.starts_with("/dev/")) {
       can = std::make_shared<robstride::AtSerialCanInterface>(interface_name);
     } else {
       auto socket_can =
