@@ -98,22 +98,18 @@ enum class MotorMode : std::uint8_t {
 struct FaultStatus {
   std::uint8_t raw = 0;  ///< 6-bit raw fault field (bit21-16)
 
-  [[nodiscard]] bool undervoltage() const {
-    return (raw & 0x01) != 0;
-  }                                                                     // bit16
-  [[nodiscard]] bool overcurrent() const { return (raw & 0x02) != 0; }  // bit17
-  [[nodiscard]] bool overtemperature() const {                          // bit18
-    return (raw & 0x04) != 0;
-  }
-  [[nodiscard]] bool magnetic_encoding() const {  // bit19
-    return (raw & 0x08) != 0;
-  }
-  [[nodiscard]] bool stall_overload() const {
-    return (raw & 0x10) != 0;
-  }  // bit20
-  [[nodiscard]] bool uncalibrated() const {
-    return (raw & 0x20) != 0;
-  }  // bit21
+  // bit16
+  [[nodiscard]] bool undervoltage() const { return (raw & 0x01) != 0; }
+  // bit17
+  [[nodiscard]] bool overcurrent() const { return (raw & 0x02) != 0; }
+  // bit18
+  [[nodiscard]] bool overtemperature() const { return (raw & 0x04) != 0; }
+  // bit19
+  [[nodiscard]] bool magnetic_encoding() const { return (raw & 0x08) != 0; }
+  // bit20
+  [[nodiscard]] bool stall_overload() const { return (raw & 0x10) != 0; }
+  // bit21
+  [[nodiscard]] bool uncalibrated() const { return (raw & 0x20) != 0; }
   [[nodiscard]] bool any() const { return raw != 0; }
 };
 
