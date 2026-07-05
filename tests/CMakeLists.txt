@@ -5,6 +5,7 @@ add_executable(robstride_driver_tests
   test_position_unwrapper.cpp
   test_protocol.cpp
   test_robstride_motor.cpp
+  test_stub_can_interface.cpp
 )
 target_link_libraries(robstride_driver_tests
   robstride_driver::robstride_driver

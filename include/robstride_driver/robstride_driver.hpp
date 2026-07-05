@@ -12,3 +12,4 @@
 #include "robstride_driver/protocol.hpp"
 #include "robstride_driver/robstride_motor.hpp"
 #include "robstride_driver/socket_can_interface.hpp"
+#include "robstride_driver/stub_can_interface.hpp"

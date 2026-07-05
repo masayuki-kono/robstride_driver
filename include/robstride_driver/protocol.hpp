@@ -135,6 +135,24 @@ struct ParamResponse {
   [[nodiscard]] std::uint8_t AsUint8() const { return data[0]; }
 };
 
+/// Decoded parameter-read request (communication type 17, host -> motor).
+struct ParamReadRequest {
+  std::uint8_t motor_id = 0;  ///< destination motor
+  std::uint8_t host_id = 0;   ///< requesting host
+  std::uint16_t index = 0;    ///< parameter index (0x7000 family)
+};
+
+/// Decoded parameter-write request (communication type 18, host -> motor).
+struct ParamWriteRequest {
+  std::uint8_t motor_id = 0;           ///< destination motor
+  std::uint8_t host_id = 0;            ///< requesting host
+  std::uint16_t index = 0;             ///< parameter index (0x7000 family)
+  std::array<std::uint8_t, 4> data{};  ///< little-endian value bytes
+
+  [[nodiscard]] float AsFloat() const;
+  [[nodiscard]] std::uint8_t AsUint8() const { return data[0]; }
+};
+
 // ---------------------------------------------------------------------------
 // Scaling helpers
 // ---------------------------------------------------------------------------
@@ -188,6 +206,24 @@ CanFrame MakeMotionControlFrame(std::uint8_t motor_id, double torque,
                                 double kd, const ActuatorLimits& limits);
 
 // ---------------------------------------------------------------------------
+// Frame encoding (motor -> host, used by simulated transports)
+// ---------------------------------------------------------------------------
+
+/// Communication type 2: feedback frame as sent by a motor. Physical
+/// values are scaled by `limits`; the inverse of ParseFeedback.
+CanFrame MakeFeedbackFrame(const Feedback& feedback,
+                           const ActuatorLimits& limits);
+
+/// Communication type 17: parameter-read response with a float value.
+CanFrame MakeParamResponseFrame(std::uint8_t motor_id, std::uint8_t host_id,
+                                std::uint16_t index, float value);
+
+/// Communication type 17: parameter-read response with a uint8 value
+/// (e.g. run_mode).
+CanFrame MakeParamResponseFrame(std::uint8_t motor_id, std::uint8_t host_id,
+                                std::uint16_t index, std::uint8_t value);
+
+// ---------------------------------------------------------------------------
 // Frame decoding (motor -> host)
 // ---------------------------------------------------------------------------
 
@@ -196,6 +232,25 @@ std::uint8_t GetCommType(const CanFrame& frame);
 
 /// Returns the motor id of a motor-originated frame (bit15-8).
 std::uint8_t GetSourceMotorId(const CanFrame& frame);
+
+// ---------------------------------------------------------------------------
+// Frame decoding (host -> motor, used by simulated transports)
+// ---------------------------------------------------------------------------
+
+/// Returns the destination motor id of a host-originated frame (bit7-0).
+std::uint8_t GetTargetMotorId(const CanFrame& frame);
+
+/// Returns the host id of a host-originated frame (bit15-8). Valid for
+/// enable/stop/read/write frames where data area 2 carries the host id.
+std::uint8_t GetHostId(const CanFrame& frame);
+
+/// Decodes a parameter-read request (communication type 17, host ->
+/// motor). Returns nullopt if the frame is not a read request.
+std::optional<ParamReadRequest> ParseParamReadRequest(const CanFrame& frame);
+
+/// Decodes a parameter-write request (communication type 18, host ->
+/// motor). Returns nullopt if the frame is not a write request.
+std::optional<ParamWriteRequest> ParseParamWriteRequest(const CanFrame& frame);
 
 /// Decodes a feedback frame (communication type 2). Returns nullopt if the
 /// frame is not a feedback frame. Physical values are scaled by `limits`.
