@@ -28,7 +28,7 @@
 
 namespace {
 
-void PrintFeedback(const robstride::Feedback& feedback) {
+void print_feedback(const robstride::Feedback& feedback) {
   std::cout << "pos=" << feedback.position << " rad"
             << "  vel=" << feedback.velocity << " rad/s"
             << "  torque=" << feedback.torque << " Nm"
@@ -60,20 +60,20 @@ int main(int argc, char** argv) {
     } else {
       auto socket_can =
           std::make_shared<robstride::SocketCanInterface>(interface_name);
-      socket_can->SetMotorIdFilter(motor_id);
+      socket_can->set_motor_id_filter(motor_id);
       can = socket_can;
     }
 
     robstride::RobstrideMotor::Config config;
     config.motor_id = motor_id;
-    config.actuator_type = robstride::ActuatorType::kRs02;
+    config.actuator_type = robstride::ActuatorType::Rs02;
     robstride::RobstrideMotor motor(can, config);
 
     std::cout << "Switching to velocity mode...\n";
-    motor.SetRunMode(robstride::RunMode::kVelocity);
-    motor.Enable();
-    motor.ConfigureVelocityMode(/*current_limit=*/10.0,
-                                /*acceleration=*/20.0);
+    motor.set_run_mode(robstride::RunMode::Velocity);
+    motor.enable();
+    motor.configure_velocity_mode(/*current_limit=*/10.0,
+                                  /*acceleration=*/20.0);
 
     std::cout << "Running at " << velocity << " rad/s for " << duration_s
               << " s...\n";
@@ -81,13 +81,13 @@ int main(int argc, char** argv) {
         std::chrono::steady_clock::now() +
         std::chrono::milliseconds(static_cast<int>(duration_s * 1000));
     while (std::chrono::steady_clock::now() < end) {
-      PrintFeedback(motor.SendVelocityCommand(velocity));
+      print_feedback(motor.send_velocity_command(velocity));
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
     std::cout << "Stopping...\n";
-    motor.SendVelocityCommand(0.0);
-    motor.Disable();
+    motor.send_velocity_command(0.0);
+    motor.disable();
   } catch (const std::exception& error) {
     std::cerr << "error: " << error.what() << '\n';
     return EXIT_FAILURE;

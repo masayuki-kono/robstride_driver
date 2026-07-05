@@ -156,4 +156,4 @@ Worked example from the manual (§3.3.5) — writing parameter 0x7005 to motor 0
 41 54 90 07 e8 0c 08 05 70 00 00 01 00 00 00 0d 0a
 ```
 
-`0x9007E80C = (0x1200FD01 << 3) | 0x4`. Frames received from the module use the same format. Implemented by `AtSerialCanInterface` (`at_serial::EncodeFrame` / `at_serial::FrameParser`).
+`0x9007E80C = (0x1200FD01 << 3) | 0x4`. Frames received from the module use the same format. Implemented by `AtSerialCanInterface` (`at_serial::encode_frame` / `at_serial::FrameParser`).

@@ -20,24 +20,24 @@ namespace at_serial {
 ///
 /// Reference: RS02 User Manual 3.3.5 (communication box instruction
 /// example).
-std::vector<std::uint8_t> EncodeFrame(const CanFrame& frame);
+std::vector<std::uint8_t> encode_frame(const CanFrame& frame);
 
 /// Incremental parser for the byte stream coming back from the USB-CAN
-/// module. Feed raw bytes with Push() and drain complete frames with
-/// Poll(). Bytes that do not form a valid frame (e.g. "OK" style command
+/// module. Feed raw bytes with push() and drain complete frames with
+/// poll(). Bytes that do not form a valid frame (e.g. "OK" style command
 /// replies) are skipped.
 class FrameParser {
  public:
   /// Appends raw bytes received from the serial port to the internal
   /// buffer.
-  void Push(const std::uint8_t* data, std::size_t size);
+  void push(const std::uint8_t* data, std::size_t size);
 
   /// Extracts the next complete frame from the internal buffer, or
   /// nullopt if none is available yet.
-  std::optional<CanFrame> Poll();
+  std::optional<CanFrame> poll();
 
  private:
-  /// Unconsumed raw bytes; Poll() removes parsed frames and skipped
+  /// Unconsumed raw bytes; poll() removes parsed frames and skipped
   /// garbage from the front.
   std::vector<std::uint8_t> buffer_;
 };
@@ -62,8 +62,8 @@ class AtSerialCanInterface : public CanInterface {
 
   ~AtSerialCanInterface() override;
 
-  void Send(const CanFrame& frame) override;
-  std::optional<CanFrame> Receive(std::chrono::milliseconds timeout) override;
+  void send(const CanFrame& frame) override;
+  std::optional<CanFrame> receive(std::chrono::milliseconds timeout) override;
 
  private:
   /// File descriptor of the opened serial device (-1 when closed).

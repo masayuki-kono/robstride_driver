@@ -33,7 +33,7 @@ class PositionUnwrapper {
       : PositionUnwrapper(2.0 * limits.position) {}
 
   /// Feeds one wrapped sample and returns the continuous position.
-  double Update(double wrapped) {
+  double update(double wrapped) {
     if (last_wrapped_) {
       const double delta = wrapped - *last_wrapped_;
       if (delta > span_ / 2.0) {
@@ -46,7 +46,7 @@ class PositionUnwrapper {
     return wrapped + offset_;
   }
 
-  /// Latest continuous position (nullopt before the first Update call).
+  /// Latest continuous position (nullopt before the first update call).
   [[nodiscard]] std::optional<double> position() const {
     if (!last_wrapped_) {
       return std::nullopt;
@@ -54,10 +54,10 @@ class PositionUnwrapper {
     return *last_wrapped_ + offset_;
   }
 
-  /// Forgets all history; the next Update starts a new continuous track
+  /// Forgets all history; the next update starts a new continuous track
   /// from the raw value. Call this when the motor may have been power
   /// cycled or re-zeroed.
-  void Reset() {
+  void reset() {
     last_wrapped_.reset();
     offset_ = 0.0;
   }
@@ -68,7 +68,7 @@ class PositionUnwrapper {
   /// Accumulated correction added to raw samples; grows/shrinks by
   /// `span_` each time the raw position wraps around [rad].
   double offset_ = 0.0;
-  /// Raw (wrapped) position of the previous Update call; nullopt until
+  /// Raw (wrapped) position of the previous update call; nullopt until
   /// the first sample arrives [rad].
   std::optional<double> last_wrapped_;
 };

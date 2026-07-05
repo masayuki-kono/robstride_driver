@@ -20,6 +20,7 @@ layering and class responsibilities and
 | `include/robstride_driver/` | Public headers (the installed API) |
 | `src/` | Library implementation |
 | `tests/` | GoogleTest unit tests (no hardware required) |
+| `tests/fixtures/` | Shared test constants (CAN bus topology, AT serial samples) |
 | `examples/` | CLI examples (`velocity_control`, `tracking_capture_<mode>`) |
 | `tools/` | Python helper scripts (plotting) |
 | `docs/` | Hardware setup, protocol, architecture, test results |
@@ -39,7 +40,17 @@ unless you need the vendor documentation.
 
 ## Code style and linting
 
-- C++: Google C++ Style, enforced by `.clang-format` and `.clang-tidy`.
+- C++ layout: clang-format (Google-based; indentation, braces, line breaks)
+- C++ naming: C++ Core Guidelines (NL/Enum), enforced by clang-tidy:
+  - Constants (`constexpr` / `const`): snake_case (ALL_CAPS is for macros only; NL.9)
+  - Group related constants in nested namespaces (e.g. `param_index::run_mode`,
+    `test_fixtures::can_bus::single::motor_id`, `tracking_capture::bench::pp_vel_max`)
+    so short names stay readable without `_val`-style suffixes
+  - Methods and free functions: snake_case (NL.10)
+  - enum values: PascalCase, no k prefix (Enum.5)
+  - Classes / structs / enum types: PascalCase
+  - Namespaces: snake_case
+  - Private members: snake_case with trailing `_`
 - Python (`tools/`): linted and formatted with ruff (`ruff.toml`).
 - Every source file starts with a copyright line and an
   `SPDX-License-Identifier: MIT` comment.
@@ -48,9 +59,9 @@ unless you need the vendor documentation.
 Run the checks the same way CI does:
 
 ```bash
-clang-format --dry-run --Werror src/*.cpp include/robstride_driver/*.hpp tests/*.cpp examples/*.cpp examples/*.hpp
+clang-format --dry-run --Werror src/*.cpp include/robstride_driver/*.hpp tests/*.cpp tests/fixtures/*.hpp examples/*.cpp examples/*.hpp
 clang-tidy -p build src/*.cpp examples/*.cpp tests/*.cpp
-ruff check tools/ && ruff format --check tools/
+pre-commit run --all-files
 ```
 
 Or via pre-commit: `pre-commit run --all-files`.

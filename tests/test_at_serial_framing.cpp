@@ -8,17 +8,13 @@
 #include <array>
 #include <vector>
 
+#include "fixtures/at_serial_samples.hpp"
 #include "robstride_driver/at_serial_can_interface.hpp"
 
 namespace robstride::at_serial {
 namespace {
 
-// Worked example from the RS02 User Manual, section 3.3.5:
-//   41 54 90 07 e8 0c 08 05 70 00 00 01 00 00 00 0d 0a
-// carries CAN id 0x1200FD01 (comm type 18, host 0xFD, motor 0x01).
-constexpr std::array<std::uint8_t, 17> kManualExample = {
-    0x41, 0x54, 0x90, 0x07, 0xe8, 0x0c, 0x08, 0x05, 0x70,
-    0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x0d, 0x0a};
+using robstride::test_fixtures::at_serial_samples::manual_run_mode_frame;
 
 TEST(AtSerialEncode, MatchesManualExample) {
   CanFrame frame;
@@ -26,9 +22,9 @@ TEST(AtSerialEncode, MatchesManualExample) {
   frame.dlc = 8;
   frame.data = {0x05, 0x70, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00};
 
-  EXPECT_EQ(
-      EncodeFrame(frame),
-      std::vector<std::uint8_t>(kManualExample.begin(), kManualExample.end()));
+  EXPECT_EQ(encode_frame(frame),
+            std::vector<std::uint8_t>(manual_run_mode_frame.begin(),
+                                      manual_run_mode_frame.end()));
 }
 
 TEST(AtSerialEncode, ShortDlc) {
@@ -37,7 +33,7 @@ TEST(AtSerialEncode, ShortDlc) {
   frame.dlc = 2;
   frame.data = {0xAA, 0xBB};
 
-  const auto packet = EncodeFrame(frame);
+  const auto packet = encode_frame(frame);
   // "AT" + 4-byte id + dlc + 2 data bytes + "\r\n"
   ASSERT_EQ(packet.size(), 11U);
   EXPECT_EQ(packet[6], 2U);
@@ -47,49 +43,49 @@ TEST(AtSerialEncode, ShortDlc) {
 
 TEST(AtSerialParse, DecodesManualExample) {
   FrameParser parser;
-  parser.Push(kManualExample.data(), kManualExample.size());
+  parser.push(manual_run_mode_frame.data(), manual_run_mode_frame.size());
 
-  const auto frame = parser.Poll();
+  const auto frame = parser.poll();
   ASSERT_TRUE(frame.has_value());
   EXPECT_EQ(frame->id, 0x1200FD01U);
   EXPECT_EQ(frame->dlc, 8U);
   EXPECT_EQ(frame->data[0], 0x05);
   EXPECT_EQ(frame->data[1], 0x70);
-  EXPECT_FALSE(parser.Poll().has_value());
+  EXPECT_FALSE(parser.poll().has_value());
 }
 
 TEST(AtSerialParse, HandlesSplitDelivery) {
   FrameParser parser;
   // Feed the frame one byte at a time, as a serial port may deliver it.
-  for (const std::uint8_t byte : kManualExample) {
-    EXPECT_FALSE(parser.Poll().has_value());
-    parser.Push(&byte, 1);
+  for (const std::uint8_t byte : manual_run_mode_frame) {
+    EXPECT_FALSE(parser.poll().has_value());
+    parser.push(&byte, 1);
   }
-  EXPECT_TRUE(parser.Poll().has_value());
+  EXPECT_TRUE(parser.poll().has_value());
 }
 
 TEST(AtSerialParse, SkipsGarbageAndCommandReplies) {
   FrameParser parser;
   const std::vector<std::uint8_t> noise = {'O', 'K', '\r', '\n', 0x00, 0xFF};
-  parser.Push(noise.data(), noise.size());
-  parser.Push(kManualExample.data(), kManualExample.size());
+  parser.push(noise.data(), noise.size());
+  parser.push(manual_run_mode_frame.data(), manual_run_mode_frame.size());
 
-  const auto frame = parser.Poll();
+  const auto frame = parser.poll();
   ASSERT_TRUE(frame.has_value());
   EXPECT_EQ(frame->id, 0x1200FD01U);
 }
 
 TEST(AtSerialParse, ResyncsAfterCorruptedTail) {
   FrameParser parser;
-  auto corrupted = kManualExample;
+  auto corrupted = manual_run_mode_frame;
   corrupted[15] = 0x00;  // break the '\r' of the tail
-  parser.Push(corrupted.data(), corrupted.size());
-  parser.Push(kManualExample.data(), kManualExample.size());
+  parser.push(corrupted.data(), corrupted.size());
+  parser.push(manual_run_mode_frame.data(), manual_run_mode_frame.size());
 
-  const auto frame = parser.Poll();
+  const auto frame = parser.poll();
   ASSERT_TRUE(frame.has_value());
   EXPECT_EQ(frame->id, 0x1200FD01U);
-  EXPECT_FALSE(parser.Poll().has_value());
+  EXPECT_FALSE(parser.poll().has_value());
 }
 
 TEST(AtSerialParse, RoundTripDataContainingTailBytes) {
@@ -99,11 +95,11 @@ TEST(AtSerialParse, RoundTripDataContainingTailBytes) {
   frame.dlc = 8;
   frame.data = {0x0d, 0x0a, 0x0d, 0x0a, 0x41, 0x54, 0x0d, 0x0a};
 
-  const auto packet = EncodeFrame(frame);
+  const auto packet = encode_frame(frame);
   FrameParser parser;
-  parser.Push(packet.data(), packet.size());
+  parser.push(packet.data(), packet.size());
 
-  const auto decoded = parser.Poll();
+  const auto decoded = parser.poll();
   ASSERT_TRUE(decoded.has_value());
   EXPECT_EQ(decoded->id, frame.id);
   EXPECT_EQ(decoded->data, frame.data);
@@ -111,12 +107,12 @@ TEST(AtSerialParse, RoundTripDataContainingTailBytes) {
 
 TEST(AtSerialParse, ParsesBackToBackFrames) {
   FrameParser parser;
-  parser.Push(kManualExample.data(), kManualExample.size());
-  parser.Push(kManualExample.data(), kManualExample.size());
+  parser.push(manual_run_mode_frame.data(), manual_run_mode_frame.size());
+  parser.push(manual_run_mode_frame.data(), manual_run_mode_frame.size());
 
-  EXPECT_TRUE(parser.Poll().has_value());
-  EXPECT_TRUE(parser.Poll().has_value());
-  EXPECT_FALSE(parser.Poll().has_value());
+  EXPECT_TRUE(parser.poll().has_value());
+  EXPECT_TRUE(parser.poll().has_value());
+  EXPECT_FALSE(parser.poll().has_value());
 }
 
 }  // namespace

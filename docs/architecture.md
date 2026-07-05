@@ -19,9 +19,9 @@ flowchart TD
 
 ### `protocol.hpp` / `protocol.cpp` — pure frame codec
 
-- Free functions that build command frames (`MakeEnableFrame`, `MakeWriteParamFrame`, `MakeMotionControlFrame`, ...) and parse response frames (`ParseFeedback`, `ParseParamResponse`).
+- Free functions that build command frames (`make_enable_frame`, `make_write_param_frame`, `make_motion_control_frame`, ...) and parse response frames (`parse_feedback`, `parse_param_response`).
 - Operates only on the transport-neutral `CanFrame` value type (29-bit id + 8 data bytes). No I/O, no state — fully covered by unit tests.
-- `FloatToUint` / `UintToFloat` implement the linear 16-bit fixed-point scaling used by motion-control and feedback frames.
+- `float_to_uint` / `uint_to_float` implement the linear 16-bit fixed-point scaling used by motion-control and feedback frames.
 
 ### `actuator_types.hpp` — per-model ranges
 
@@ -30,10 +30,10 @@ flowchart TD
 
 ### `CanInterface` — transport abstraction
 
-- Two operations: `Send(frame)` and `Receive(timeout)`.
+- Two operations: `send(frame)` and `receive(timeout)`.
 - `SocketCanInterface` targets SocketCAN adapters (raw SocketCAN socket, extended frames only, optional kernel-side filter on the source motor id).
-- `AtSerialCanInterface` targets the official RobStride USB-CAN module (CH340 serial bridge at 921600 baud). Frames are wrapped in the module's AT framing — `"AT"` + big-endian `((id << 3) | 0x4)` + DLC + data + `"\r\n"` — by the pure codec in `at_serial::EncodeFrame` / `at_serial::FrameParser`, which is unit-tested against the worked example in the RS02 User Manual. The parser is length-based (DLC), so payload bytes equal to the tail sequence do not break framing, and it resynchronizes on corrupted input.
-- `StubCanInterface` simulates motors at the frame level for running applications without hardware: enable/stop and parameter writes are answered with feedback frames, parameter reads (including the `run_mode` read-back done by `SetRunMode`) with type-17 responses. Velocity commands are integrated into the position; CSP position targets are reached instantly; the feedback position wraps at the actuator range like real hardware. One instance simulates every motor id addressed through it, and axes can mix stub and real transports because each `RobstrideMotor` receives its own `CanInterface`. Fault bits and temperature are injectable for fault-handling tests.
+- `AtSerialCanInterface` targets the official RobStride USB-CAN module (CH340 serial bridge at 921600 baud). Frames are wrapped in the module's AT framing — `"AT"` + big-endian `((id << 3) | 0x4)` + DLC + data + `"\r\n"` — by the pure codec in `at_serial::encode_frame` / `at_serial::FrameParser`, which is unit-tested against the worked example in the RS02 User Manual. The parser is length-based (DLC), so payload bytes equal to the tail sequence do not break framing, and it resynchronizes on corrupted input.
+- `StubCanInterface` simulates motors at the frame level for running applications without hardware: enable/stop and parameter writes are answered with feedback frames, parameter reads (including the `run_mode` read-back done by `set_run_mode`) with type-17 responses. Velocity commands are integrated into the position; CSP position targets are reached instantly; the feedback position wraps at the actuator range like real hardware. One instance simulates every motor id addressed through it, and axes can mix stub and real transports because each `RobstrideMotor` receives its own `CanInterface`. Fault bits and temperature are injectable for fault-handling tests.
 - Tests substitute a scripted mock; other transports (e.g. a remote CAN bridge) can be added without touching motor logic.
 
 ### `PositionUnwrapper` — continuous position helper
@@ -49,7 +49,7 @@ flowchart TD
   - Parameter reads are answered by a type-17 response.
   - Frames from other motors are skipped; unexpected feedback frames still update the cache.
   - A missing response raises `TimeoutError`.
-- Mode changes follow the manual's requirement to stop the motor first: `SetRunMode` = stop → write `run_mode` → read back and verify. The motor is left disabled so the caller controls when it re-enables.
+- Mode changes follow the manual's requirement to stop the motor first: `set_run_mode` = stop → write `run_mode` → read back and verify. The motor is left disabled so the caller controls when it re-enables.
 
 ## Threading model
 

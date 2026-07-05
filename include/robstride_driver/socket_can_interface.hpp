@@ -28,10 +28,10 @@ class SocketCanInterface : public CanInterface {
   /// Installs a kernel CAN filter that accepts only extended frames whose
   /// identifier bits 15-8 equal `motor_id` (i.e. frames sent by that
   /// motor). Call before the first Receive.
-  void SetMotorIdFilter(std::uint8_t motor_id);
+  void set_motor_id_filter(std::uint8_t motor_id);
 
-  void Send(const CanFrame& frame) override;
-  std::optional<CanFrame> Receive(std::chrono::milliseconds timeout) override;
+  void send(const CanFrame& frame) override;
+  std::optional<CanFrame> receive(std::chrono::milliseconds timeout) override;
 
  private:
   /// Raw CAN socket file descriptor (-1 when closed).

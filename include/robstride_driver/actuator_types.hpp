@@ -13,13 +13,13 @@ namespace robstride {
 /// other models are taken from the vendor sample code and have not been
 /// cross-checked against their official manuals.
 enum class ActuatorType : std::uint8_t {
-  kRs00 = 0,
-  kRs01 = 1,
-  kRs02 = 2,
-  kRs03 = 3,
-  kRs04 = 4,
-  kRs05 = 5,
-  kRs06 = 6,
+  Rs00 = 0,
+  Rs01 = 1,
+  Rs02 = 2,
+  Rs03 = 3,
+  Rs04 = 4,
+  Rs05 = 5,
+  Rs06 = 6,
 };
 
 /// Physical ranges used to encode/decode 16-bit fixed-point values in
@@ -40,6 +40,6 @@ struct ActuatorLimits {
 ///
 /// RS02 (per RS02 User Manual): position +-4*pi rad, velocity +-44 rad/s,
 /// torque +-17 Nm, Kp 0-500, Kd 0-5.
-const ActuatorLimits& GetActuatorLimits(ActuatorType type);
+const ActuatorLimits& get_actuator_limits(ActuatorType type);
 
 }  // namespace robstride

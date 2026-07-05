@@ -52,7 +52,7 @@ Any adapter with a mainline Linux SocketCAN driver works, for example:
 - **Canable / candleLight firmware** (`gs_usb` driver) — plug and play
 - Adapters based on `slcan` (serial-line CAN) also work but add latency
 
-Use `SocketCanInterface` with these adapters. Kernel-side receive filtering (`SetMotorIdFilter`) is available.
+Use `SocketCanInterface` with these adapters. Kernel-side receive filtering (`set_motor_id_filter`) is available.
 
 ### RobStride official USB-CAN module
 
@@ -78,9 +78,9 @@ Each motor needs a unique CAN id (factory default `0x7F` = 127).
 To assign ids, connect **one motor at a time** and either:
 
 - use the vendor's Windows tuning tool, or
-- use this driver's communication type 7 frame (`MakeSetCanIdFrame`), which changes the id immediately. Persist it afterwards with the data-save frame (type 22) if required by your firmware version.
+- use this driver's communication type 7 frame (`make_set_can_id_frame`), which changes the id immediately. Persist it afterwards with the data-save frame (type 22) if required by your firmware version.
 
-The driver-side receive filter (`SocketCanInterface::SetMotorIdFilter`) matches the motor id carried in bits 15–8 of feedback frames, so per-motor sockets can coexist on one interface.
+The driver-side receive filter (`SocketCanInterface::set_motor_id_filter`) matches the motor id carried in bits 15–8 of feedback frames, so per-motor sockets can coexist on one interface.
 
 ## Power-up behavior
 

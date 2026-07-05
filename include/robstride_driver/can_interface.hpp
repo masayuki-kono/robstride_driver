@@ -20,11 +20,11 @@ class CanInterface {
   virtual ~CanInterface() = default;
 
   /// Sends one frame. Throws std::runtime_error on transport failure.
-  virtual void Send(const CanFrame& frame) = 0;
+  virtual void send(const CanFrame& frame) = 0;
 
   /// Receives one frame, waiting up to `timeout`. Returns nullopt on
   /// timeout. Throws std::runtime_error on transport failure.
-  virtual std::optional<CanFrame> Receive(
+  virtual std::optional<CanFrame> receive(
       std::chrono::milliseconds timeout) = 0;
 };
 

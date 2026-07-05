@@ -79,24 +79,24 @@ See [docs/setup.md](docs/setup.md) for persistent configuration and a virtual-CA
 
 int main() {
   auto can = std::make_shared<robstride::SocketCanInterface>("can0");
-  can->SetMotorIdFilter(0x01);
+  can->set_motor_id_filter(0x01);
   // ... or, with the RobStride USB-CAN module:
   // auto can = std::make_shared<robstride::AtSerialCanInterface>("/dev/ttyUSB0");
 
   robstride::RobstrideMotor::Config config;
   config.motor_id = 0x01;
-  config.actuator_type = robstride::ActuatorType::kRs02;
+  config.actuator_type = robstride::ActuatorType::Rs02;
   robstride::RobstrideMotor motor(can, config);
 
-  motor.SetRunMode(robstride::RunMode::kVelocity);
-  motor.Enable();
-  motor.ConfigureVelocityMode(/*current_limit=*/10.0, /*acceleration=*/20.0);
+  motor.set_run_mode(robstride::RunMode::Velocity);
+  motor.enable();
+  motor.configure_velocity_mode(/*current_limit=*/10.0, /*acceleration=*/20.0);
 
-  auto feedback = motor.SendVelocityCommand(2.0);  // rad/s
+  auto feedback = motor.send_velocity_command(2.0);  // rad/s
   // feedback.position / velocity / torque / temperature / fault
 
-  motor.SendVelocityCommand(0.0);
-  motor.Disable();
+  motor.send_velocity_command(0.0);
+  motor.disable();
 }
 ```
 
