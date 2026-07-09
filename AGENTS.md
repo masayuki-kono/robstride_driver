@@ -89,11 +89,18 @@ documents how those results were measured on a real RS02.
 - New public API must be usable through `robstride_driver.hpp` and
   documented in the README when user-facing.
 
+## Hosting and agent tools
+
+This repository is on **GitHub** (`masayuki-kono/robstride_driver`).
+Prefer GitHub MCP (`user-github`) for Issue / PR operations; use local
+`git` for branch, commit, tag, and push. Actions and Releases are outside
+this MCP's tool surface — confirm those in the GitHub UI.
+
 ## Releasing
 
 Releases follow the procedure in
 [.agents/skills/release/SKILL.md](.agents/skills/release/SKILL.md):
 release branch → `CHANGELOG.md` + version bump (`CMakeLists.txt` and
-`package.xml` must match) → PR → tag `vX.Y.Z` on the merged `main`.
-Pushing the tag triggers `.github/workflows/release.yml`, which creates
-the GitHub Release from the matching `CHANGELOG.md` section.
+`package.xml` must match) → PR (GitHub MCP) → tag `vX.Y.Z` on the
+merged `main`. Pushing the tag triggers `.github/workflows/release.yml`,
+which creates the GitHub Release from the matching `CHANGELOG.md` section.
